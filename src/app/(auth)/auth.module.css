@@ -113,4 +113,5 @@
 .card .save { margin-top: 16px; }
 .content .error { color: #a42629; }
 .content .footer { margin-top: 20px; text-align: center; }
+.attendeeLink { color: #00696c; font-weight: 700; text-underline-offset: 3px; }
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { AuthHeader } from "../auth-header";
 import { LoginForm } from "./login-form";
 import styles from "../auth.module.css";
@@ -18,7 +19,9 @@ export default function LoginPage() {
           <span className={styles.badge}>System Admin · Manager · Staff</span>
         </section>
         <LoginForm />
-        <p className={styles.footer}>ผู้เข้าร่วมงานลงทะเบียนได้โดยไม่ต้องเข้าสู่ระบบ</p>
+        <p className={styles.footer}>
+          <Link className={styles.attendeeLink} href="/attendee">ดูงานและลงทะเบียนสำหรับผู้เข้าร่วม</Link>
+        </p>
       </main>
     </div>
   );

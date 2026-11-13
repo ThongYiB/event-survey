@@ -10,6 +10,7 @@ const sections = [
   ["form", "ฟอร์มลงทะเบียน"],
   ["team", "ทีมงาน"],
   ["survey", "แบบสอบถาม"],
+  ["qr-center", "QR Center"],
 ] as const;
 
 export function ManagerShell({ children }: { children: React.ReactNode }) {

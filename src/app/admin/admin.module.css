@@ -36,6 +36,9 @@
 .shell input, .shell select { box-sizing: border-box; min-width: 0; width: 100%; min-height: 42px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fcfefe; color: inherit; font: inherit; }
 .shell button { min-height: 40px; padding: 8px 13px; border: 1px solid var(--teal); border-radius: 8px; background: var(--teal); color: #fff; font: inherit; font-weight: 650; cursor: pointer; }
 .shell .secondary { border-color: var(--line); background: #fff; color: #00696c; }
+.accountActions { display: flex; flex-wrap: wrap; gap: 6px; }
+.shell .deleteAccount { border-color: #b4232b; background: #fff; color: #b4232b; }
+.shell .deleteAccount:hover { background: #fff1f2; }
 .shell :focus-visible { outline: 2px solid #005b61; outline-offset: 2px; }
 .actions { justify-content: flex-end; }
 .note { margin: 0 0 12px; padding: 12px; border-radius: 8px; background: var(--tint); color: #005b61; }

@@ -77,6 +77,15 @@ export function AdminWorkspace({ children }: { children: ReactNode }) {
     record(account.suspended ? "คืนสิทธิ์บัญชี" : "ระงับบัญชี", account.email);
   }
 
+  function deleteAccount(account: Account) {
+    if (account.role === "System Admin") return;
+    if (!window.confirm(`ลบบัญชี ${account.name} (${account.email}) ออกจากรายการทดลองหรือไม่?`)) return;
+
+    setAccounts((list) => list.filter((item) => item.email !== account.email));
+    setCreated((email) => email === account.email ? "" : email);
+    record("ลบบัญชี", account.email);
+  }
+
   const visibleAccounts = accounts.filter((account) =>
     (filter === "ทั้งหมด" || account.role === filter) &&
     (account.name + " " + account.email).toLowerCase().includes(query.trim().toLowerCase()),
@@ -134,7 +143,18 @@ export function AdminWorkspace({ children }: { children: ReactNode }) {
                   <tbody>
                     {visibleAccounts.map((account) => <tr key={account.email}>
                       <td><strong>{account.name}</strong><small>{account.email}</small></td><td>{account.role}</td><td>{account.event}</td><td>{account.suspended ? "ระงับ" : account.status}</td>
-                      <td>{account.role === "System Admin" ? "บัญชีผู้ดูแล" : <button type="button" className={styles.secondary} onClick={() => toggleAccount(account)}>{account.suspended ? "คืนสิทธิ์" : "ระงับ"}</button>}</td>
+                      <td>
+                        {account.role === "System Admin" ? "บัญชีผู้ดูแล" : (
+                          <div className={styles.accountActions}>
+                            <button type="button" className={styles.secondary} onClick={() => toggleAccount(account)}>
+                              {account.suspended ? "คืนสิทธิ์" : "ระงับ"}
+                            </button>
+                            <button type="button" className={styles.deleteAccount} onClick={() => deleteAccount(account)}>
+                              ลบบัญชี
+                            </button>
+                          </div>
+                        )}
+                      </td>
                     </tr>)}
                     {!visibleAccounts.length && <tr><td colSpan={5}>ไม่พบบัญชีที่ตรงกับการค้นหา</td></tr>}
                   </tbody>

@@ -24,7 +24,7 @@ export function PasswordForm() {
       <section className={styles.card} aria-label="ผลการทดลองตั้งรหัสผ่าน">
         <h2 role="status">ทดลองตั้งรหัสผ่านสำเร็จ</h2>
         <p>หน้านี้เป็นตัวอย่าง รหัสผ่านจะไม่ถูกบันทึก</p>
-        <Link className={styles.returnLink} href="/login">กลับไปหน้าเข้าสู่ระบบ</Link>
+        <Link className={styles.returnLink} href="/details">ไปหน้าจัดการอีเวนต์</Link>
       </section>
     );
   }

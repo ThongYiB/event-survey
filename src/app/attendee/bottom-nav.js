@@ -22,8 +22,8 @@ const items = [
     ),
   },
   {
-    href: "/attendee/register",
-    label: "ลงทะเบียน",
+    href: "/attendee/survey",
+    label: "แบบสอบถาม",
     icon: (
       <>
         <circle cx="12" cy="8" r="4" />
@@ -39,7 +39,7 @@ export default function BottomNav() {
   return (
     <nav className="sticky bottom-0 mt-auto grid grid-cols-3 border-t border-black/5 bg-white" aria-label="เมนูผู้เข้าร่วมงาน">
       {items.map((item) => {
-        const active = pathname === item.href;
+        const active = pathname === item.href || (item.href === "/attendee/survey" && pathname.startsWith("/attendee/survey/"));
         return (
           <Link
             key={item.href}

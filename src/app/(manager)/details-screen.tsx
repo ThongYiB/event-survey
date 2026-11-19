@@ -3,7 +3,7 @@
 import { useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
 import { ScreenHeading } from "./shell";
-import { initialDetails, saveLocal, useSaved } from "./store";
+import { initialDetails, useSaveSetting, useSaved } from "./store";
 import styles from "./manager.module.css";
 
 const dateFields = [
@@ -14,6 +14,7 @@ const dateFields = [
 ] as const;
 
 export function EventDetails() {
+  const saveSetting = useSaveSetting();
   const saved = useSaved("details", initialDetails);
   const [draft, setDraft] = useState<typeof initialDetails | null>(null);
   const [message, setMessage] = useState("");
@@ -50,7 +51,7 @@ export function EventDetails() {
     }
   }
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
     if (!details.name.trim() || !details.description.trim() || !details.venue.trim()) {
@@ -61,8 +62,8 @@ export function EventDetails() {
       setError("วันและเวลาสิ้นสุดต้องอยู่หลังวันและเวลาเริ่ม");
       return;
     }
-    if (!saveLocal("details", { ...details, name: details.name.trim() })) {
-      setError("บันทึกในเบราว์เซอร์ไม่ได้ กรุณาตรวจพื้นที่จัดเก็บ");
+    if (!await saveSetting("details", { ...details, name: details.name.trim() })) {
+      setError("บันทึกรายละเอียดไม่สำเร็จ กรุณาตรวจข้อความด้านบนแล้วลองอีกครั้ง");
       return;
     }
     setDraft(null);

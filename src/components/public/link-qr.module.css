@@ -1,0 +1,9 @@
+.card { display: grid; gap: 12px; justify-items: stretch; }
+.image { display: grid; place-items: center; min-height: 220px; background: white; border-radius: 10px; }
+.image img { display: block; width: min(100%, 220px); height: auto; }
+.url { display: grid; gap: 6px; font-size: 13px; }
+.url input { box-sizing: border-box; width: 100%; padding: 10px; border: 1px solid #d5e5e7; border-radius: 7px; font: inherit; color: #173b44; background: #fcfefe; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.actions a, .actions button, .link { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 8px 12px; border: 1px solid #d5e5e7; border-radius: 7px; background: white; font: inherit; color: #007f82; text-decoration: none; cursor: pointer; }
+.link { text-align: center; }
+.card :focus-visible { outline: 2px solid #007f82; outline-offset: 3px; }

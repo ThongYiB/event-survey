@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { ScreenHeading } from "./shell";
-import { saveLocal, useSaved } from "./store";
+import { useSaveSetting, useSaved } from "./store";
 import styles from "./manager.module.css";
 
 const permissions = ["ค้นหาผู้ลงทะเบียน", "เช็กอิน", "ลงทะเบียน Walk-in"];
@@ -15,15 +15,16 @@ const initialTeam: Staff[] = [
 ];
 
 export function TeamManagement() {
+  const saveSetting = useSaveSetting();
   const team = useSaved("team", initialTeam);
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<Staff | "new" | null>(null);
   const [feedback, setFeedback] = useState<{ text: string; error?: boolean }>();
   const visible = team.filter((item) => (item.name + " " + item.email).toLowerCase().includes(query.trim().toLowerCase()));
 
-  function save(next: Staff[], text: string) {
-    if (!saveLocal("team", next)) {
-      setFeedback({ text: "บันทึกในเบราว์เซอร์ไม่ได้", error: true });
+  async function save(next: Staff[], text: string) {
+    if (!await saveSetting("team", next)) {
+      setFeedback({ text: "บันทึกไม่สำเร็จ กรุณาตรวจข้อความด้านบน", error: true });
       return;
     }
     setEditing(null);

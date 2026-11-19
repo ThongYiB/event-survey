@@ -43,6 +43,12 @@
 .actions { justify-content: flex-end; }
 .note { margin: 0 0 12px; padding: 12px; border-radius: 8px; background: var(--tint); color: #005b61; }
 .error { margin: 0; color: #a42629; }
+.accountForm { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.formError { grid-column: 1 / -1; display: flex; align-items: flex-start; gap: 10px; padding: 13px 15px; border: 1px solid #f5c9cc; border-radius: 10px; background: #fff4f4; color: #a42629; font-size: 14px; line-height: 1.65; overflow-wrap: anywhere; }
+.formError strong { display: block; }
+.formError p { margin: 2px 0 0; }
+.errorIcon { display: grid; place-items: center; flex: 0 0 20px; height: 20px; margin-top: 2px; border-radius: 50%; background: #a42629; color: #fff; font-size: 13px; font-weight: 700; }
+.passwordHint { margin: -4px 0 2px; color: var(--muted); font-size: 13px; line-height: 1.6; }
 .scroll { overflow-x: auto; }
 .scroll table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
 .scroll th, .scroll td { padding: 11px 10px; border-bottom: 1px solid var(--line); }
@@ -56,3 +62,4 @@
   .sidebar .exit { margin-top: 8px; }
 }
 
+.sidebar button.exit { width: 100%; border: 0; text-align: left; font: inherit; cursor: pointer; }

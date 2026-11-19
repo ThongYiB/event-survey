@@ -4,8 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import QRCode from "qrcode";
 import { event, loadRegistration } from "../event";
+import { usePublicEvent } from "@/components/public/use-public-event";
+import { eventDateLabel } from "@/lib/public-event";
 
 export default function TicketPage() {
+  const { configuration } = usePublicEvent();
   const [ticket, setTicket] = useState(null);
 
   useEffect(() => {
@@ -59,9 +62,9 @@ export default function TicketPage() {
             <span className="inline-block rounded-full bg-brand-light px-3 py-1 text-xs font-medium text-brand">
               ตั๋วเข้าร่วมงาน • 1 ท่าน
             </span>
-            <p className="text-lg font-bold">{event.name}</p>
+            <p className="text-lg font-bold">{configuration?.details.name || event.name}</p>
             <p className="text-xs text-muted">
-              {event.date} • {event.time}
+              {configuration ? eventDateLabel(configuration.details) : `${event.date} • ${event.time}`}
             </p>
 
             <div className="mx-auto w-52 rounded-xl border-2 border-brand/30 p-2">

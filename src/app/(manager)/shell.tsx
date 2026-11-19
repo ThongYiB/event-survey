@@ -1,20 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { useSelectedLayoutSegment } from "next/navigation";
+import { useRouter, useSelectedLayoutSegment } from "next/navigation";
 import { initialDetails, useSaved } from "./store";
 import styles from "./manager.module.css";
+import { supabaseEnabled } from "@/lib/supabase/config";
 
 const sections = [
+  ["manager", "ภาพรวม"],
   ["details", "รายละเอียดงาน"],
   ["form", "ฟอร์มลงทะเบียน"],
   ["team", "ทีมงาน"],
   ["survey", "แบบสอบถาม"],
   ["qr-center", "QR Center"],
+  ["registration", "ผู้ลงทะเบียน"],
+  ["report", "รายงานผล"],
+  ["kiosk", "จอประชาสัมพันธ์"],
 ] as const;
 
 export function ManagerShell({ children }: { children: React.ReactNode }) {
   const segment = useSelectedLayoutSegment();
+  const router = useRouter();
   return (
     <div className={styles.shell}>
       <aside className={styles.sidebar}>
@@ -22,10 +28,14 @@ export function ManagerShell({ children }: { children: React.ReactNode }) {
         <p className={styles.role}>Event Manager</p>
         <nav aria-label="เมนู Event Manager">
           {sections.map(([id, label]) => (
-            <Link key={id} href={`/${id}`} aria-current={segment === id ? "page" : undefined}>{label}</Link>
+            <Link key={id} href={`/${id}`} aria-current={segment === id || (segment === "dashboard" && id === "manager") ? "page" : undefined}>{label}</Link>
           ))}
         </nav>
-        <Link className={styles.exit} href="/login">กลับหน้าเข้าสู่ระบบ</Link>
+        <Link className={styles.exit} href="/login" onClick={async (event) => {
+          event.preventDefault();
+          try { const response = await fetch(supabaseEnabled() ? "/api/auth/sign-out" : "/api/manager/sign-in", { method: supabaseEnabled() ? "POST" : "DELETE" }); if (!response.ok) throw new Error(); router.push("/login"); router.refresh(); }
+          catch { window.alert("ออกจากระบบไม่สำเร็จ กรุณาลองอีกครั้ง"); }
+        }}>กลับหน้าเข้าสู่ระบบ</Link>
       </aside>
       <main className={styles.main}>
         <div className={styles.topbar}>พื้นที่จัดการ / Event Manager</div>

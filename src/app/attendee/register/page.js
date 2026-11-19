@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { event, saveRegistration, generateTicketCode } from "../event";
+import { saveRegistration } from "../event";
+import { usePublicEvent } from "@/components/public/use-public-event";
+import { eventDateLabel } from "@/lib/public-event";
+import { ClosedEvent, PublicLoadState } from "../event-state";
 
 const faculties = [
   "คณะวิศวกรรมศาสตร์",
@@ -50,13 +53,17 @@ const inputClass = (hasError) =>
   }`;
 
 export default function RegisterPage() {
+  const { configuration, error: configError, refresh } = usePublicEvent();
   const router = useRouter();
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
   const [step, setStep] = useState("form"); // "form" | "confirm"
   const [saveError, setSaveError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const requestKey = useRef("");
 
   function update(field, value) {
+    requestKey.current = "";
     setForm((f) => ({ ...f, [field]: value }));
     if (errors[field]) setErrors((e) => ({ ...e, [field]: undefined }));
   }
@@ -69,19 +76,40 @@ export default function RegisterPage() {
     if (Object.keys(found).length === 0) setStep("confirm");
   }
 
-  function handleConfirm() {
+  async function handleConfirm() {
+    setSaveError("");
+    setSaving(true);
     try {
-      saveRegistration({
-        ...form,
-        ticketCode: generateTicketCode(),
-        registeredAt: new Date().toISOString(),
+      requestKey.current ||= Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
+        byte.toString(16).padStart(2, "0"),
+      ).join("");
+      const response = await fetch("/api/attendee/registrations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, requestKey: requestKey.current }),
       });
+      const result = await response.json();
+      if (result.code === "registration-closed") { router.replace("/attendee/registration-closed"); return; }
+      if (!response.ok) {
+        setSaveError(result.message ?? "ลงทะเบียนไม่สำเร็จ กรุณาลองอีกครั้ง");
+        return;
+      }
+      try {
+        saveRegistration({ ...form, ticketCode: result.ticketCode, registeredAt: result.registeredAt });
+      } catch {
+        setSaveError("ลงทะเบียนแล้ว แต่เบราว์เซอร์เปิดตั๋วไม่ได้ กรุณาอนุญาตการจัดเก็บข้อมูลแล้วกดยืนยันอีกครั้ง");
+        return;
+      }
+      router.push("/attendee/ticket");
     } catch {
-      setSaveError("บันทึกการลงทะเบียนไม่ได้ กรุณาตรวจสอบว่าเบราว์เซอร์อนุญาตให้จัดเก็บข้อมูล");
-      return;
+      setSaveError("เชื่อมต่อระบบลงทะเบียนไม่ได้ กรุณาลองอีกครั้ง");
+    } finally {
+      setSaving(false);
     }
-    router.push("/attendee/ticket");
   }
+
+  if (!configuration) return <PublicLoadState error={configError} retry={refresh} />;
+  if (!configuration.registrationOpen) return <ClosedEvent kind="registration" details={configuration.details} />;
 
   return (
     <main className="flex-1 space-y-4 px-4 py-5">
@@ -90,9 +118,9 @@ export default function RegisterPage() {
       </h1>
 
       <div className="rounded-2xl bg-white p-4 shadow-sm">
-        <p className="font-semibold">{event.name}</p>
+        <p className="font-semibold">{configuration.details.name}</p>
         <p className="text-xs text-muted">
-          {event.date} • {event.time}
+          {eventDateLabel(configuration.details)}
         </p>
       </div>
 
@@ -183,12 +211,14 @@ export default function RegisterPage() {
           {saveError && <p role="alert" className="text-sm text-red-700">{saveError}</p>}
           <button
             onClick={handleConfirm}
-            className="w-full rounded-xl bg-brand py-3 font-semibold text-white transition hover:bg-brand-dark"
+            disabled={saving}
+            className="w-full rounded-xl bg-brand py-3 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-60"
           >
-            ✓ ยืนยันการลงทะเบียน
+            {saving ? "กำลังลงทะเบียน…" : "✓ ยืนยันการลงทะเบียน"}
           </button>
           <button
             onClick={() => setStep("form")}
+            disabled={saving}
             className="w-full py-2 text-sm font-medium text-brand"
           >
             แก้ไขข้อมูล

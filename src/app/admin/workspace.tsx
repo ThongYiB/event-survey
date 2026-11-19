@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useSelectedLayoutSegment } from "next/navigation";
 import { useState, type FormEvent, type ReactNode } from "react";
 import styles from "./admin.module.css";
+import { updateAdminSnapshot, useAdminSnapshot, type Account, type AdminSnapshot } from "./store";
+import { supabaseEnabled } from "@/lib/supabase/config";
+import { CloudAdminWorkspace } from "./cloud-workspace";
 
 const navigation = [
   { id: "accounts", label: "บัญชีผู้ใช้" },
@@ -12,44 +15,19 @@ const navigation = [
   { id: "security", label: "ความปลอดภัย" },
 ] as const;
 
-type Account = {
-  name: string;
-  email: string;
-  role: "System Admin" | "Event Manager" | "Staff";
-  status: "ใช้งาน" | "รอเปลี่ยนรหัสผ่าน";
-  suspended?: boolean;
-  event: string;
-};
-
-const demoAccounts: Account[] = [
-  { name: "อรุณ", email: "arun@example.com", role: "System Admin", status: "ใช้งาน", event: "ทุกอีเวนต์" },
-  { name: "มินตรา", email: "min@example.com", role: "Event Manager", status: "ใช้งาน", event: "Creative Campus 2026" },
-  { name: "ภาคิน", email: "pakin@example.com", role: "Event Manager", status: "ใช้งาน", event: "Design Meetup" },
-  { name: "ธนกฤต", email: "tan@example.com", role: "Staff", status: "ใช้งาน", event: "Creative Campus 2026" },
-  { name: "ณิชา", email: "nicha@example.com", role: "Staff", status: "ใช้งาน", event: "Creative Campus 2026" },
-];
-
-const demoEvents = [
-  { id: "campus", name: "Creative Campus 2026", owner: "มินตรา", suspended: false },
-  { id: "meetup", name: "Design Meetup", owner: "ภาคิน", suspended: false },
-];
-
-type AuditEntry = { action: string; target: string; time: string };
-
-export function AdminWorkspace({ children }: { children: ReactNode }) {
+function DemoAdminWorkspace({ children }: { children: ReactNode }) {
   const section = useSelectedLayoutSegment();
   const current = navigation.find((item) => section === item.id);
-  const [accounts, setAccounts] = useState(demoAccounts);
-  const [events, setEvents] = useState(demoEvents);
-  const [audit, setAudit] = useState<AuditEntry[]>([]);
+  const { snapshot: { accounts, events, audit }, error: storageError } = useAdminSnapshot();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("ทั้งหมด");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
   const [created, setCreated] = useState("");
 
-  function record(action: string, target: string) {
-    setAudit((entries) => [{ action, target, time: new Date().toISOString() }, ...entries]);
+  function persist(change: (current: AdminSnapshot) => AdminSnapshot) {
+    try { updateAdminSnapshot(change); setError(""); return true; }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "บันทึกข้อมูลไม่ได้ กรุณาลองอีกครั้ง"); return false; }
   }
 
   function createAccount(event: FormEvent<HTMLFormElement>) {
@@ -58,10 +36,11 @@ export function AdminWorkspace({ children }: { children: ReactNode }) {
     const name = String(form.get("name")).trim();
     const email = String(form.get("email")).trim().toLowerCase();
     if (!name) return setError("กรุณากรอกชื่อและนามสกุล");
-    if (accounts.some((account) => account.email === email)) return setError("อีเมลนี้มีบัญชีอยู่แล้ว");
+    if (!persist((current) => {
+      if (current.accounts.some((account) => account.email === email)) throw new Error("อีเมลนี้มีบัญชีอยู่แล้ว");
+      return { ...current, accounts: [...current.accounts, { name, email, role: "Event Manager", status: "รอเปลี่ยนรหัสผ่าน", event: "ยังไม่มีอีเวนต์" }], audit: [{ action: "สร้างบัญชี Event Manager", target: email, time: new Date().toISOString() }, ...current.audit] };
+    })) return;
     event.currentTarget.reset();
-    setAccounts((list) => [...list, { name, email, role: "Event Manager", status: "รอเปลี่ยนรหัสผ่าน", event: "ยังไม่มีอีเวนต์" }]);
-    record("สร้างบัญชี Event Manager", email);
     setError("");
     setCreated(email);
     setCreating(false);
@@ -71,19 +50,23 @@ export function AdminWorkspace({ children }: { children: ReactNode }) {
 
   function toggleAccount(account: Account) {
     if (account.role === "System Admin") return;
-    setAccounts((list) => list.map((item) => item.email === account.email
-      ? { ...item, suspended: !item.suspended }
-      : item));
-    record(account.suspended ? "คืนสิทธิ์บัญชี" : "ระงับบัญชี", account.email);
+    persist((current) => {
+      const saved = current.accounts.find((item) => item.email === account.email);
+      if (!saved || saved.role === "System Admin") throw new Error("บัญชีนี้ถูกเปลี่ยนแปลงแล้ว กรุณาตรวจสอบรายการอีกครั้ง");
+      return { ...current, accounts: current.accounts.map((item) => item.email === saved.email ? { ...item, suspended: !saved.suspended } : item), audit: [{ action: saved.suspended ? "คืนสิทธิ์บัญชี" : "ระงับบัญชี", target: saved.email, time: new Date().toISOString() }, ...current.audit] };
+    });
   }
 
   function deleteAccount(account: Account) {
     if (account.role === "System Admin") return;
     if (!window.confirm(`ลบบัญชี ${account.name} (${account.email}) ออกจากรายการทดลองหรือไม่?`)) return;
 
-    setAccounts((list) => list.filter((item) => item.email !== account.email));
+    if (!persist((current) => {
+      const saved = current.accounts.find((item) => item.email === account.email);
+      if (!saved || saved.role === "System Admin") throw new Error("ไม่พบบัญชีที่สามารถลบได้ กรุณาตรวจสอบรายการอีกครั้ง");
+      return { ...current, accounts: current.accounts.filter((item) => item.email !== account.email), audit: [{ action: "ลบบัญชี", target: account.email, time: new Date().toISOString() }, ...current.audit] };
+    })) return;
     setCreated((email) => email === account.email ? "" : email);
-    record("ลบบัญชี", account.email);
   }
 
   const visibleAccounts = accounts.filter((account) =>
@@ -109,6 +92,8 @@ export function AdminWorkspace({ children }: { children: ReactNode }) {
         <div className={styles.topbar}>พื้นที่ทดลอง / System Admin</div>
         <div className={styles.content}>
           {children}
+          <p className={styles.note}>ข้อมูล Admin บันทึกในเบราว์เซอร์นี้ รีเฟรชแล้วข้อมูลยังอยู่ · บัญชีที่สร้างยังเป็นบัญชีตัวอย่าง</p>
+          {(storageError || error) && <p role="alert" className={styles.error}>{storageError || error}</p>}
           {current?.id === "accounts" && <>
             <header className={styles.heading}>
               <div><h1>บัญชีผู้ใช้และบทบาท</h1><p>สร้างบัญชี Event Manager และจัดการสถานะบัญชี</p></div>
@@ -121,7 +106,6 @@ export function AdminWorkspace({ children }: { children: ReactNode }) {
                 <label>อีเมล *<input type="email" name="email" maxLength={254} placeholder="manager@example.com" required /></label>
                 <label>รหัสผ่านชั่วคราว *<input type="password" name="password" autoComplete="new-password" minLength={8} required /></label>
                 <p className={styles.note}>บัญชีได้รับสิทธิ์ Event Manager สำหรับสร้างและจัดการอีเวนต์ของตนเอง โดยต้องเปลี่ยนรหัสผ่านเมื่อเข้าสู่ระบบครั้งแรก ใช้รหัสผ่านสมมติสำหรับทดลอง</p>
-                {error && <p role="alert" className={styles.error}>{error}</p>}
                 <div className={styles.actions}>
                   <button type="button" className={styles.secondary} onClick={() => setCreating(false)}>ยกเลิก</button>
                   <button type="submit">สร้างบัญชี</button>
@@ -169,14 +153,17 @@ export function AdminWorkspace({ children }: { children: ReactNode }) {
               <tbody>{events.map((event) => <tr key={event.id}>
                 <td>{event.name}</td><td>{event.owner}</td><td>{event.suspended ? "ระงับ" : "เปิดใช้งาน"}</td>
                 <td><button type="button" className={styles.secondary} onClick={() => {
-                  setEvents((list) => list.map((item) => item.id === event.id ? { ...item, suspended: !item.suspended } : item));
-                  record(event.suspended ? "เปิดใช้งานอีเวนต์" : "ระงับอีเวนต์", event.name);
+                  persist((current) => {
+                    const saved = current.events.find((item) => item.id === event.id);
+                    if (!saved) throw new Error("ไม่พบอีเวนต์ กรุณาตรวจสอบรายการอีกครั้ง");
+                    return { ...current, events: current.events.map((item) => item.id === saved.id ? { ...item, suspended: !saved.suspended } : item), audit: [{ action: saved.suspended ? "เปิดใช้งานอีเวนต์" : "ระงับอีเวนต์", target: saved.name, time: new Date().toISOString() }, ...current.audit] };
+                  });
                 }}>{event.suspended ? "เปิดใช้งาน" : "ระงับอีเวนต์"}</button></td>
               </tr>)}</tbody>
             </table></div></section>
           </>}
           {current?.id === "audit" && <>
-            <header className={styles.heading}><div><h1>Audit Log</h1><p>ประวัติการเปลี่ยนแปลงบัญชีและอีเวนต์ในการทดลองครั้งนี้</p></div></header>
+            <header className={styles.heading}><div><h1>Audit Log</h1><p>ประวัติการเปลี่ยนแปลงบัญชีและอีเวนต์ที่บันทึกในเบราว์เซอร์นี้</p></div></header>
             <section className={styles.panel}><div className={styles.scroll}><table>
               <thead><tr><th scope="col">เวลา (ไทย)</th><th scope="col">การดำเนินการ</th><th scope="col">รายการ</th></tr></thead>
               <tbody>{audit.map((entry, index) => <tr key={index}>
@@ -197,5 +184,9 @@ export function AdminWorkspace({ children }: { children: ReactNode }) {
       </main>
     </div>
   );
+}
+
+export function AdminWorkspace({ children }: { children: ReactNode }) {
+  return supabaseEnabled() ? <CloudAdminWorkspace>{children}</CloudAdminWorkspace> : <DemoAdminWorkspace>{children}</DemoAdminWorkspace>;
 }
 

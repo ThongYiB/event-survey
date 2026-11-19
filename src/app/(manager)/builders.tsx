@@ -2,7 +2,9 @@
 
 import { useState, type PointerEvent } from "react";
 import { ScreenHeading } from "./shell";
-import { saveLocal, useSaved } from "./store";
+import { useSaveSetting, useSaved } from "./store";
+import Link from "next/link";
+import { defaultSurveyFields } from "@/lib/public-event";
 import styles from "./manager.module.css";
 
 const registrationTypes = { text: "ข้อความสั้น", email: "อีเมล", tel: "โทรศัพท์" };
@@ -15,11 +17,7 @@ const registration: Field[] = [
   { id: "email", label: "อีเมล", type: "email", help: "ใช้ยืนยันข้อมูลการลงทะเบียน", required: true, options: "" },
   { id: "phone", label: "โทรศัพท์", type: "tel", help: "", required: false, options: "" },
 ];
-const survey: Field[] = [
-  { id: "satisfaction", label: "คุณพึงพอใจกับงานโดยรวมเพียงใด?", type: "radio", help: "", required: true, options: "ดีมาก\nพอใช้\nควรปรับปรุง" },
-  { id: "activities", label: "กิจกรรมที่ชอบ", type: "checkbox", help: "", required: false, options: "เสวนาสร้างแรงบันดาลใจ\nเวิร์กช็อปสร้างสรรค์" },
-  { id: "comments", label: "ข้อเสนอแนะเพิ่มเติม", type: "textarea", help: "", required: false, options: "" },
-];
+const survey: Field[] = defaultSurveyFields;
 
 function isChoice(type: string) {
   return type === "radio" || type === "checkbox";
@@ -52,6 +50,7 @@ function PreviewField({ field }: { field: Field }) {
 }
 
 function Builder({ mode }: { mode: "form" | "survey" }) {
+  const saveSetting = useSaveSetting();
   const isSurvey = mode === "survey";
   const noun = isSurvey ? "คำถาม" : "ฟิลด์";
   const types: Record<string, string> = isSurvey ? surveyTypes : registrationTypes;
@@ -96,13 +95,13 @@ function Builder({ mode }: { mode: "form" | "survey" }) {
       ?.closest<HTMLElement>("[data-builder-field-id]")?.dataset.builderFieldId;
   }
 
-  function save() {
+  async function save() {
     if (fields.some((item) => !item.label.trim() || (isChoice(item.type) && optionsFor(item).length < 2))) {
       setFeedback({ text: "กรอกชื่อทุกช่อง และระบุตัวเลือกอย่างน้อยสองข้อสำหรับคำถามแบบเลือก", error: true });
       return;
     }
-    if (!saveLocal(mode, fields)) {
-      setFeedback({ text: "บันทึกในเบราว์เซอร์ไม่ได้", error: true });
+    if (!await saveSetting(mode, fields)) {
+      setFeedback({ text: "บันทึกไม่สำเร็จ กรุณาตรวจข้อความด้านบน", error: true });
       return;
     }
     setDraft(null);
@@ -115,6 +114,7 @@ function Builder({ mode }: { mode: "form" | "survey" }) {
         <button onClick={save}>บันทึก{isSurvey ? "แบบสอบถาม" : "ฟอร์ม"}</button>
       </ScreenHeading>
       <p className={styles.muted}>{fields.length} {noun} · บังคับ {fields.filter((item) => item.required).length}</p>
+      {isSurvey && <p className={styles.notice}>หลังบันทึกคำถาม <Link href="/qr-center">ไป QR Center เพื่อเผยแพร่ให้ผู้เข้าร่วมตอบ</Link></p>}
       {feedback && <p className={feedback.error ? styles.error : styles.notice} role={feedback.error ? "alert" : "status"}>{feedback.text}</p>}
       <div className={styles.builder}>
         <section className={styles.panel}>

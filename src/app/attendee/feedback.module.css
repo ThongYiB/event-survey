@@ -1,0 +1,30 @@
+.page { flex: 1; display: grid; align-content: start; gap: 20px; padding: 26px 20px 32px; }
+.page h1 { font-size: 23px; font-weight: 750; line-height: 1.5; }
+.page h2 { font-size: 16px; font-weight: 700; }
+.intro { display: grid; gap: 10px; }
+.intro p, .muted { color: #526c74; font-size: 13px; line-height: 1.8; }
+.eyebrow { color: #007f82; font-size: 12px; font-weight: 650; }
+.badge { display: inline-block; justify-self: start; padding: 5px 10px; border-radius: 30px; background: #e7f4f2; color: #137343; font-size: 12px; }
+.form { display: grid; gap: 16px; }
+.question, .panel { display: grid; gap: 14px; min-width: 0; padding: 20px; border: 1px solid #d5e5e7; border-radius: 14px; background: white; }
+.question { margin: 0; }
+.question legend { float: left; width: 100%; padding: 0; font-size: 15px; font-weight: 700; line-height: 1.8; }
+.question input[type="text"], .question textarea { width: 100%; border: 1px solid #d5e5e7; border-radius: 7px; padding: 12px; background: #fcfefe; font: inherit; font-size: 14px; line-height: 1.8; }
+.question textarea { resize: vertical; }
+.option { display: flex; align-items: start; gap: 10px; border: 1px solid #d5e5e7; border-radius: 7px; padding: 12px; font-size: 14px; line-height: 1.7; cursor: pointer; }
+.option:has(input:checked) { border-color: #007f82; background: #e7f4f2; }
+.option input { flex-shrink: 0; margin-top: 5px; accent-color: #007f82; width: 16px; height: 16px; }
+.page .primary, .page .secondary { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 46px; padding: 12px; border: 1px solid #007f82; border-radius: 8px; background: #007f82; color: white; font-size: 14px; font-weight: 650; text-decoration: none; cursor: pointer; }
+.page .secondary { border-color: #d5e5e7; background: white; color: #005b61; }
+.page button:disabled { background: #e8eff0; border-color: #e8eff0; color: #526c74; cursor: default; }
+.page .primary:hover:not(:disabled) { background: #00696c; }
+.error { color: #b4232b; font-size: 13px; line-height: 1.7; }
+.notice, .success { padding: 16px; border-radius: 12px; background: #e7f5f4; color: #005b61; font-size: 13px; line-height: 1.9; }
+.notice { display: grid; gap: 6px; }
+.hero { padding: 32px 20px; text-align: center; justify-items: center; gap: 18px; }
+.icon { display: grid; place-items: center; width: 76px; height: 76px; border-radius: 50%; background: #eff7f7; color: #698d94; }
+.icon svg { width: 32px; height: 32px; }
+.success { display: grid; justify-items: center; gap: 16px; padding: 32px 16px; color: #137343; }
+.success .icon { background: #007f82; color: white; }
+.actions { display: grid; gap: 10px; }
+.page :focus-visible { outline: 2px solid #007f82; outline-offset: 3px; }

@@ -4,8 +4,9 @@ import { useState, type FormEvent } from "react";
 import { ScreenHeading } from "./shell";
 import { useSaveSetting, useSaved } from "./store";
 import styles from "./manager.module.css";
+import {StaffInvite} from '@/components/cloud/staff-invite';
 
-const permissions = ["ค้นหาผู้ลงทะเบียน", "เช็กอิน", "ลงทะเบียน Walk-in"];
+const permissions = ["ค้นหาผู้ลงทะเบียน", "เช็กอิน", "ลงทะเบียน Walk-in","แสดง QR แบบสอบถาม"];
 
 type Staff = { name: string; email: string; access: string[] };
 const initialTeam: Staff[] = [
@@ -50,6 +51,7 @@ export function TeamManagement() {
       <ScreenHeading title="ทีมงานประจำอีเวนต์" description="สิทธิ์มีผลเฉพาะอีเวนต์นี้">
         <button onClick={() => { setEditing("new"); setFeedback(undefined); }}>＋ เพิ่มทีมงาน</button>
       </ScreenHeading>
+      <StaffInvite/>
       {feedback && <p className={feedback.error ? styles.error : styles.notice} role={feedback.error ? "alert" : "status"}>{feedback.text}</p>}
       {editing && <form key={editing === "new" ? editing : editing.email} className={styles.panel} onSubmit={submit}>
         <h2>{editing === "new" ? "เพิ่มทีมงาน" : "แก้ไขสิทธิ์ทีมงาน"}</h2>

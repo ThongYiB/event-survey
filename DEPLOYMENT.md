@@ -35,7 +35,7 @@ Vercel ตั้ง `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABL
 - หน้าจัดการ Admin ส่งผู้ที่ยังไม่เข้าสู่ระบบกลับ `/login`
 - API ข้อมูล Admin และ Manager ตอบ 401 หากไม่มีเซสชัน
 - API เข้าสู่ระบบตอบข้อผิดพลาดบัญชีจากระบบจริง
-- Build และ TypeScript บน Vercel ผ่านครบ 57 หน้า
+- Build และ TypeScript บน Vercel ผ่านครบ 61 เส้นทาง (อัปเดตล่าสุดรวมเช็กอินและรายงาน)
 
 ## การปรับปรุงหลังเผยแพร่
 
@@ -46,4 +46,6 @@ Vercel ตั้ง `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABL
 - ข้อผิดพลาดสร้างบัญชีอยู่ใต้ช่องรหัสผ่านในกล่องแจ้งเตือน ล้างเมื่อแก้ข้อมูล และตรวจอีเมลที่มีอยู่แล้วก่อนส่งคำขอสร้างบัญชี
 - ตรวจ `node scripts/test-cloud-proxy.mjs`, `node scripts/test-supabase-policies.mjs`, lint, build และทดสอบเมนู/ข้อความแจ้งเตือนบนเว็บไซต์จริงแล้ว
 
-ส่วนลงทะเบียน เช็กอิน คำตอบแบบสอบถาม และรายงานยังเป็นขอบเขตการเชื่อม Supabase ขั้นถัดไปตาม `supabase/SETUP.md`
+เชื่อมลงทะเบียน ตั๋ว QR ส่วนบุคคล QR Center และรายชื่อของ Manager แล้วตาม `supabase/REGISTRATION.md` เชื่อม Staff สแกน/ค้นหา/Walk-in สถานะรายชื่อและรายงานการเข้าร่วมแล้วตาม `supabase/STAFF.md` ส่วนรับคำตอบแบบสอบถามและการเล่นคิวสื่อ Kiosk บนอุปกรณ์จริงยังเหลือ
+
+คำสั่ง build ใช้ Webpack เช่นเดียวกับโหมดพัฒนา เพื่อเลี่ยงปัญหา Turbopack เปิดกระบวนการแปลง CSS ไม่ได้บน Windows ของเครื่องนี้

@@ -4,18 +4,18 @@
 @source "./";
 
 @theme {
-  --color-brand: #0f6e6a;
-  --color-brand-dark: #0b5551;
-  --color-brand-light: #e3f3f1;
-  --color-surface: #f2f8f7;
-  --color-muted: #526967;
+  --color-brand: #007f82;
+  --color-brand-dark: #00696c;
+  --color-brand-light: #e5f3f3;
+  --color-surface: #f3f8f9;
+  --color-muted: #526c74;
 }
 
 @layer base {
   .attendee-stage {
     min-height: 100dvh;
-    background: #e6eeed;
-    color: #1d2b2a;
+    background: #e9f0f2;
+    color: #142e36;
   }
 
   .attendee-stage *, .attendee-stage *::before, .attendee-stage *::after {

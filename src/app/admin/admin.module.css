@@ -13,6 +13,7 @@
 
 .sidebar { padding: 22px 16px; background: #fff; border-right: 1px solid var(--line); }
 .brand { display: flex; align-items: center; gap: 10px; }
+.menuToggle { display:none; }
 .brand span { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 9px; background: var(--teal); color: #fff; font-weight: 700; }
 .role { margin: 22px 0 16px; padding: 11px 12px; border-radius: 9px; background: var(--tint); color: #005b61; font-weight: 700; }
 .sidebar nav { display: grid; gap: 4px; }
@@ -58,6 +59,8 @@
 @media (max-width: 700px) {
   .shell, .form, .filters { grid-template-columns: minmax(0, 1fr); }
   .sidebar { border-right: 0; border-bottom: 1px solid var(--line); }
+  .shell .menuToggle { display:block; margin-left:auto; min-height:38px; padding:7px 10px; background:white; color:var(--teal); border-color:var(--line); font-size:13px; }
+  .sidebar[data-menu-open="false"] :is(nav,.role,.exit) { display:none; }
   .sidebar nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .sidebar .exit { margin-top: 8px; }
 }

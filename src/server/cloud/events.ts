@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { defaultEventDetails, surveyOptions, type SurveyField } from "@/lib/public-event";
 import type { CloudManagerData, CloudManagerEvent } from "@/lib/cloud-manager";
 import { CloudError, type Profile } from "./auth";
+import {cleanKiosk} from '@/lib/kiosk';
 
 export const activeEventCookie = "event-survey-active-event";
 
@@ -53,6 +54,5 @@ export function validateEventSetting(key: unknown, value: unknown) {
     if (!Array.isArray(value) || value.length > 100 || value.some((member) => !member || typeof member.email !== "string" || member.email.length > 254 || !Array.isArray(member.access) || member.access.some((permission: unknown) => !["ค้นหาผู้ลงทะเบียน", "เช็กอิน", "ลงทะเบียน Walk-in", "แสดง QR แบบสอบถาม"].includes(String(permission))))) throw new CloudError("ข้อมูลทีมงานไม่ถูกต้อง");
     return value;
   }
-  if (!value || typeof value !== "object" || Array.isArray(value)) throw new CloudError("ข้อมูลตั้งค่าจอไม่ถูกต้อง");
-  return value;
+  try{return cleanKiosk(value);}catch(error){throw new CloudError(error instanceof Error?error.message:'ข้อมูลตั้งค่าจอไม่ถูกต้อง');}
 }

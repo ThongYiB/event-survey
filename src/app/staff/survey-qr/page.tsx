@@ -5,10 +5,12 @@ import s from "../staff.module.css";
 import { ButtonLink, PageHeader, Tag } from "../_components/ui";
 import WithSession from "../_components/WithSession";
 import { LinkQr } from "@/components/public/link-qr";
+import { useStaff } from "../_lib/store";
 
 export default function SurveyQrPage() {
+  const {cloudMode}=useStaff();
   return (
-    <WithSession>
+    <WithSession required={["แสดง QR แบบสอบถาม"]}>
       {({ event }) => (
         <>
           <PageHeader eyebrow="STAFF / QR แบบประเมิน" title="แสดง QR แบบประเมิน" />
@@ -20,7 +22,7 @@ export default function SurveyQrPage() {
               {formatDateLong(event.startsAt)} • {formatTimeRange(event.startsAt, event.endsAt)}
             </p>
 
-            <LinkQr path="/attendee/survey" label="แบบสอบถาม" downloadName="event-survey-survey-qr.png" />
+            <LinkQr path={cloudMode?`/attendee/survey?event=${event.id}`:'/attendee/survey'} label="แบบสอบถาม" downloadName="event-survey-survey-qr.png" />
 
             <p className={s.meta}>QR กลางของงาน • สำหรับผู้เข้าร่วมทุกคน</p>
           </section>

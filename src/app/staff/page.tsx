@@ -5,6 +5,8 @@ import s from "./staff.module.css";
 import { InfoIcon, PinIcon, QrMiniIcon, ScanIcon } from "./_components/icons";
 import { ButtonLink, Card, Notice, PageHeader, Tag } from "./_components/ui";
 import WithSession from "./_components/WithSession";
+import { useStaff } from "./_lib/store";
+import { CloudStaffWorkspace } from "@/components/cloud/staff-workspace";
 
 const STATUS_TAG = {
   open: <Tag tone="ok">เปิดรับลงทะเบียน</Tag>,
@@ -13,7 +15,8 @@ const STATUS_TAG = {
 };
 
 export default function StaffEventsPage() {
-
+  const {cloudMode}=useStaff();
+  if(cloudMode) return <CloudStaffWorkspace />;
   return (
     <WithSession>
       {({ staff, event, stats }) => {

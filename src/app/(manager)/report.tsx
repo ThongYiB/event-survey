@@ -15,6 +15,7 @@ export default function ReportsPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [version, setVersion] = useState(0);
+  useEffect(()=>{const timer=setInterval(()=>{if(!document.hidden)setVersion(v=>v+1);},15000);return()=>clearInterval(timer);},[]);
   useEffect(() => {
     const controller = new AbortController();
     void fetch("/api/manager/survey-results", { cache: "no-store", signal: controller.signal }).then(async (response) => {

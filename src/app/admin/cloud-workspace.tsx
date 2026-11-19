@@ -11,6 +11,7 @@ const labels: Record<string, string> = { system_admin: "System Admin", event_man
 const nav = [["accounts", "บัญชีผู้ใช้"], ["events", "กำกับดูแลงาน"], ["audit", "Audit Log"], ["security", "ความปลอดภัย"]];
 
 export function CloudAdminWorkspace({ children }: { children: ReactNode }) {
+  const [menuOpen,setMenuOpen]=useState(false);
   const pathname = usePathname();
   const section = pathname.split("/")[2] || "accounts";
   const router = useRouter();
@@ -55,11 +56,12 @@ export function CloudAdminWorkspace({ children }: { children: ReactNode }) {
   }
 
   return <div className={styles.shell}>
-    <aside className={styles.sidebar}><div className={styles.brand}><span>ES</span><strong>Event Survey</strong></div><div className={styles.role}>System Admin</div>
-      <nav aria-label="เมนู System Admin">{nav.map(([id, label]) => <Link key={id} href={`/admin/${id}`} prefetch={false} aria-current={section === id ? "page" : undefined} onNavigate={(event) => {
+    <aside className={styles.sidebar} data-menu-open={menuOpen} onKeyDown={event=>{if(event.key==="Escape")setMenuOpen(false);}}><div className={styles.brand}><span>ES</span><strong>Event Survey</strong><button className={styles.menuToggle} aria-label={menuOpen?"ปิดเมนู":"เปิดเมนู System Admin"} aria-expanded={menuOpen} aria-controls="admin-menu" onClick={()=>setMenuOpen(!menuOpen)}>{menuOpen?"ปิด ✕":"เมนู ☰"}</button></div><div className={styles.role}>System Admin</div>
+      <nav id="admin-menu" aria-label="เมนู System Admin">{nav.map(([id, label]) => <Link key={id} href={`/admin/${id}`} prefetch={false} aria-current={section === id ? "page" : undefined} onNavigate={(event) => {
         // All four panels use the data already loaded in this shared layout.
         // Preserve normal links/new tabs while switching these panels locally.
         event.preventDefault();
+        setMenuOpen(false);
         if (section !== id) window.history.pushState(null, "", `/admin/${id}`);
       }}>{label}</Link>)}</nav>
       <button className={styles.exit} onClick={async () => { const response = await fetch("/api/auth/sign-out", { method: "POST" }); if (response.ok) { router.replace("/login"); router.refresh(); } else setError("ออกจากระบบไม่ได้ กรุณาลองอีกครั้ง"); }}>ออกจากระบบ</button>

@@ -14,7 +14,9 @@ import { useStaff } from "../_lib/store";
 
 export default function SearchPage() {
   const router = useRouter();
-  const { checkIn } = useStaff();
+  const { checkIn,cloudMode,session } = useStaff();
+  const canCheckIn=!cloudMode||!!session?.access?.includes("เช็กอิน");
+  const canWalkIn=canCheckIn&&(!cloudMode||!!session?.access?.includes("ลงทะเบียน Walk-in"));
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Attendee[] | null>(null);
   const [searching, setSearching] = useState(false);
@@ -64,7 +66,7 @@ export default function SearchPage() {
   const noMatch = q && results && results.length === 0;
 
   return (
-    <WithSession>
+    <WithSession required={["ค้นหาผู้ลงทะเบียน"]}>
       {({ event }) => (
         <>
           <PageHeader eyebrow="STAFF / ทางเลือกเมื่อใช้กล้องไม่ได้" title="ค้นหาผู้ลงทะเบียน" />
@@ -116,9 +118,9 @@ export default function SearchPage() {
                     <div className={s.spacer8}>
                       {a.checkIn ? <Tag tone="ok">เช็กอินแล้ว</Tag> : <Tag tone="warn">ยังไม่เช็กอิน</Tag>}
                     </div>
-                    <Button onClick={() => setPending(a)} disabled={!!a.checkIn}>
+                    {canCheckIn&&<Button onClick={() => setPending(a)} disabled={!!a.checkIn}>
                       {a.checkIn ? "เช็กอินแล้ว" : "ตรวจสอบและเช็กอิน"}
-                    </Button>
+                    </Button>}
                   </li>
                 ))}
               </ul>
@@ -130,9 +132,9 @@ export default function SearchPage() {
               {noMatch ? `ไม่พบผู้ลงทะเบียน “${q}” ในงานนี้` : "ผู้เข้าร่วมที่ยังไม่ได้ลงทะเบียนล่วงหน้า"}
             </p>
             <p className={s.meta}>ตรวจสอบตัวสะกด หรือลงทะเบียนหน้างานให้ผู้เข้าร่วม</p>
-            <ButtonLink href="/staff/walk-in" variant="ghost">
+            {canWalkIn?<ButtonLink href="/staff/walk-in" variant="ghost">
               <UserPlusIcon /> ลงทะเบียน Walk-in
-            </ButtonLink>
+            </ButtonLink>:<p className={s.meta}>ติดต่อหัวหน้าทีมงานหากต้องลงทะเบียนหรือเช็กอินเพิ่มเติม</p>}
           </Card>
 
           <ConfirmDialog

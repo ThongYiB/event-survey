@@ -6,7 +6,7 @@ import type { Profile } from "@/server/cloud/auth";
 const managerPages = ["/manager", "/dashboard", "/details", "/form", "/team", "/survey", "/qr-center", "/registration", "/report", "/kiosk"];
 // These handlers verify the session and current database role themselves.
 // Do not repeat their database round trips in the routing proxy.
-const authenticatedHandlers = new Set(["/api/admin/workspace", "/api/manager/events", "/api/manager/active-event", "/api/staff/cloud-events"]);
+const authenticatedHandlers = new Set(["/api/admin/workspace", "/api/manager/events", "/api/manager/active-event", "/api/staff/cloud-events", "/api/staff/session", "/api/staff/active-event", "/api/staff/attendees", "/api/staff/check-ins", "/api/staff/walk-ins", "/api/manager/public-event", "/api/manager/registrations"]);
 export async function supabaseProxy(request: NextRequest) {
   let response = NextResponse.next({ request });
   const finish = (next: NextResponse) => {
@@ -16,9 +16,11 @@ export async function supabaseProxy(request: NextRequest) {
   };
   const path = request.nextUrl.pathname;
   const pending = () => NextResponse.json({ message: "ส่วนลงทะเบียน เช็กอิน แบบสอบถาม และรายงานกำลังเชื่อม Supabase ในขั้นถัดไป ข้อมูลตัวอย่างในเครื่องยังถูกเก็บไว้" }, { status: 503, headers: { "Cache-Control": "no-store" } });
+  if (["/api/public/event", "/api/attendee/registrations", "/api/attendee/ticket"].includes(path)) return finish(response);
+  if(path==='/api/public/survey'||path==='/api/public/kiosk'||path==='/api/public/staff-signup'||path==='/api/manager/staff-invite'||path==='/api/manager/survey-results'||path==='/api/manager/survey-publication')return finish(response);
   if (path.startsWith("/api/public/") || path.startsWith("/api/attendee/")) return pending();
   if (path.startsWith("/api/auth/") || path === "/login") return response;
-  if (authenticatedHandlers.has(path)) return finish(response);
+  if (authenticatedHandlers.has(path) || path === "/api/manager/checkin-summary") return finish(response);
   try {
     const { url, key } = supabasePublicConfig();
     const client = createServerClient(url, key, { cookies: {

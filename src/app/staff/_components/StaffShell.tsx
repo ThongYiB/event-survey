@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import s from "../staff.module.css";
-import { STAFF_RESULT_KEY } from "../_lib/store";
+import { STAFF_RESULT_KEY, useStaff } from "../_lib/store";
 import {
   ArrowLeftIcon,
   CalendarIcon,
@@ -28,6 +28,7 @@ const TABS = [
 
 export default function StaffShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/staff";
+  const {cloudMode,session}=useStaff();
   const back = BACK.find((b) => b.match.test(pathname));
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState(false);
@@ -36,7 +37,7 @@ export default function StaffShell({ children }: { children: ReactNode }) {
     setSigningOut(true);
     setSignOutError(false);
     try {
-      const response = await fetch("/api/staff/sign-in", { method: "DELETE" });
+      const response = await fetch(cloudMode?"/api/auth/sign-out":"/api/staff/sign-in", { method: cloudMode?"POST":"DELETE" });
       if (!response.ok) throw new Error("Sign-out failed");
     } catch {
       setSignOutError(true);
@@ -74,6 +75,7 @@ export default function StaffShell({ children }: { children: ReactNode }) {
       <nav className={s.tabbar} aria-label="เมนู Staff">
         <div className={s.tabbarInner}>
           {TABS.map(({ href, label, icon: Icon, match }) => {
+            if(cloudMode && href!=="/staff" && (!session || (href==="/staff/scan" && !session.access?.includes("เช็กอิน")) || (href==="/staff/search" && !session.access?.includes("ค้นหาผู้ลงทะเบียน")) || (href==="/staff/walk-in" && !(session.access?.includes("ลงทะเบียน Walk-in") && session.access?.includes("เช็กอิน"))))) return null;
             const active = match.test(pathname);
             return (
               <Link

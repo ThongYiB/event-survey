@@ -13,6 +13,7 @@ export function CloudManagerProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [version, setVersion] = useState(0);
+  const [creating,setCreating]=useState(false);
   const router = useRouter();
   useEffect(() => {
     const controller = new AbortController();
@@ -23,7 +24,7 @@ export function CloudManagerProvider({ children }: { children: ReactNode }) {
   }, [version]);
 
   async function save(key: string, value: unknown) {
-    if (busy) return false;
+    if (busy || !data) return false;
     setBusy(true); setError("");
     try {
       const response = await fetch("/api/manager/events", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key, value }) });
@@ -34,7 +35,7 @@ export function CloudManagerProvider({ children }: { children: ReactNode }) {
   }
 
   async function select(id: string) {
-    if (busy) return false;
+    if (busy || !data) return false;
     setBusy(true); setError("");
     try {
       const response = await fetch("/api/manager/active-event", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
@@ -50,20 +51,24 @@ export function CloudManagerProvider({ children }: { children: ReactNode }) {
     try {
       const response = await fetch("/api/manager/events", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: values.get("name") }) });
       const result = await response.json(); if (!response.ok) throw new Error(result.message);
-      form.reset(); setVersion((value) => value + 1); router.push("/details");
+      form.reset(); setCreating(false); setVersion((value) => value + 1); router.push("/details");
     } catch (reason) { setError(reason instanceof Error ? reason.message : "สร้างอีเวนต์ไม่ได้"); }
     finally { setBusy(false); }
   }
 
-  if (!data) return <div className={styles.content}><p role={error ? "alert" : "status"}>{error || "กำลังโหลดอีเวนต์จาก Supabase…"}</p>{error && <><button onClick={() => setVersion((value) => value + 1)}>ลองอีกครั้ง</button><Link href="/login">ไปหน้าเข้าสู่ระบบ</Link></>}</div>;
-  return <CloudManagerContext.Provider value={{ data, busy, save, select }}>
-    <div className={styles.content}>
-      <section className={styles.panel}>
+  const pending: CloudManagerData = { profile: { id: "", name: "" }, events: [], event: null, team: [] };
+  return <CloudManagerContext.Provider value={{ data: data ?? pending, busy: busy || !data, save, select }}><ManagerShell>
+    {!data && <section className={styles.panel}><p role={error ? "alert" : "status"}>{error || "กำลังโหลดอีเวนต์จาก Supabase…"}</p>{error && <><button onClick={() => setVersion((value) => value + 1)}>ลองอีกครั้ง</button><Link href="/login">ไปหน้าเข้าสู่ระบบ</Link></>}</section>}
+    {data && <>
+      <div className={styles.eventToolbar}>
         {data.event && <label>อีเวนต์ที่กำลังจัดการ<select value={data.event.id} disabled={busy} onChange={(event) => void select(event.target.value)}>{data.events.map((event) => <option key={event.id} value={event.id}>{event.name}</option>)}</select></label>}
-        <form className={styles.item} onSubmit={create}><label>สร้างอีเวนต์ใหม่<input name="name" required maxLength={200} placeholder="ชื่ออีเวนต์" disabled={busy} /></label><button disabled={busy}>＋ สร้างอีเวนต์</button></form>
-        {error && <p role="alert" className={styles.error}>{error}</p>}
-      </section>
-    </div>
-    <div key={data.event?.id || "empty"}>{data.event ? children : <ManagerShell><h1>ยังไม่มีอีเวนต์</h1><p>สร้างอีเวนต์แรกจากแบบฟอร์มด้านบนได้เลย</p></ManagerShell>}</div>
-  </CloudManagerContext.Provider>;
+        <button disabled={busy} aria-expanded={creating} onClick={()=>setCreating(!creating)}>＋ สร้างอีเวนต์ใหม่</button>
+      </div>
+      {(creating||!data.event)&&<form className={styles.panel} onSubmit={create}><h2>สร้างอีเวนต์ใหม่</h2><label>ชื่ออีเวนต์<input name="name" required maxLength={200} placeholder="ระบุชื่ออีเวนต์" disabled={busy} autoFocus /></label><div className={styles.item}><button disabled={busy}>สร้างอีเวนต์</button>{data.event&&<button type="button" className={styles.secondary} onClick={()=>setCreating(false)}>ยกเลิก</button>}</div></form>}
+      {error&&<p role="alert" className={styles.error}>{error}</p>}
+    </>}
+    {data && !data.event && <section className={styles.panel}><h1>ยังไม่มีอีเวนต์</h1><p>สร้างอีเวนต์แรกจากแบบฟอร์มด้านบนได้เลย</p></section>}
+    {/* Keep Next's page slot mounted during loading and empty states. */}
+    <div key={data?.event?.id || "empty"} hidden={!data?.event}>{children}</div>
+  </ManagerShell></CloudManagerContext.Provider>;
 }

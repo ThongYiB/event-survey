@@ -6,13 +6,15 @@ import { initialDetails, useSaveSetting, useSaved } from "./store";
 import Link from "next/link";
 import styles from "./manager.module.css";
 import kiosk from "./kiosk.module.css";
+import { useCloudManager } from "@/components/cloud/manager-context";
 
 type Media = { id: string; name: string; type: "image" | "video"; src: string; seconds: number };
-type Settings = { screens: string[]; startsAt: string; endsAt: string; media: Media[] };
+type Settings = { published?:boolean;screens: string[]; startsAt: string; endsAt: string; media: Media[] };
 const screenNames = ["ทางเข้าหลัก", "หน้าฮอลล์ A", "หน้าฮอลล์ B"];
 const initial: Settings = { screens: ["ทางเข้าหลัก", "หน้าฮอลล์ A"], startsAt: "", endsAt: "", media: [] };
 
 export default function KioskPage() {
+  const cloud=useCloudManager();
   const saveSetting = useSaveSetting();
   const details = useSaved("details", initialDetails);
   const saved = useSaved("kiosk", initial);
@@ -88,7 +90,7 @@ export default function KioskPage() {
   return (
     <form onSubmit={save} className={styles.stack}>
       <ScreenHeading title="จอประชาสัมพันธ์ (Kiosk)" description="จัดคิวสื่อ เลือกจอ และกำหนดเวลา">
-        <Link href="/display" className={styles.outlineLink} target="_blank" rel="noreferrer">เปิดจอ QR สำหรับผู้เข้าร่วม</Link>
+        <Link href={cloud?.data.event?`/display?event=${cloud.data.event.id}`:"/display"} className={styles.outlineLink} target="_blank" rel="noreferrer">เปิดจอ QR สำหรับผู้เข้าร่วม</Link>
         <button disabled={loading}>บันทึกการตั้งค่า</button>
       </ScreenHeading>
       <p className={styles.notice}>ตั้งค่าและดูตัวอย่างจอในเบราว์เซอร์นี้</p>
@@ -116,6 +118,8 @@ export default function KioskPage() {
           </section>
           <div className={styles.fields}>
             <section className={styles.panel}><h2>จอที่จะแสดง</h2>
+              <label className={styles.check}><input type="checkbox" checked={!!settings.published} onChange={e=>change({published:e.target.checked})}/>เผยแพร่คิวสื่อบนจอที่เลือก</label>
+              {cloud?.data.event&&<Link className={styles.outlineLink} target="_blank" rel="noreferrer" href={`/display/media?event=${cloud.data.event.id}`}>เปิดเครื่องเล่นสื่อสำหรับจอ</Link>}
               {screenNames.map((name) => <label key={name} className={styles.check}>
                 <input type="checkbox" checked={settings.screens.includes(name)} onChange={(e) => change({ screens: e.target.checked ? [...settings.screens, name] : settings.screens.filter((s) => s !== name) })} />{name}
               </label>)}<p className={styles.muted}>เลือกแล้ว {settings.screens.length} จอ</p>

@@ -4,7 +4,6 @@ import StaffShell from "./_components/StaffShell";
 import { StaffProvider } from "./_lib/store";
 import s from "./staff.module.css";
 import { supabaseEnabled } from "@/lib/supabase/config";
-import { CloudStaffWorkspace } from "@/components/cloud/staff-workspace";
 
 export const metadata: Metadata = {
   title: "Event Survey · Staff",
@@ -18,10 +17,9 @@ export const viewport: Viewport = {
 };
 
 export default function StaffLayout({ children }: { children: ReactNode }) {
-  if (supabaseEnabled()) return <div className={s.root}><CloudStaffWorkspace /></div>;
   return (
     <div className={s.root}>
-      <StaffProvider>
+      <StaffProvider cloudMode={supabaseEnabled()}>
         <StaffShell>{children}</StaffShell>
       </StaffProvider>
     </div>

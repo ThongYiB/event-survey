@@ -6,6 +6,8 @@ import { saveRegistration } from "../event";
 import { usePublicEvent } from "@/components/public/use-public-event";
 import { eventDateLabel } from "@/lib/public-event";
 import { ClosedEvent, PublicLoadState } from "../event-state";
+import { supabaseEnabled } from "@/lib/supabase/config";
+import { CloudAttendeeRegistration } from "@/components/cloud/attendee-registration";
 
 const faculties = [
   "คณะวิศวกรรมศาสตร์",
@@ -52,7 +54,7 @@ const inputClass = (hasError) =>
       : "border-black/10 bg-white focus:border-brand focus:ring-brand/20"
   }`;
 
-export default function RegisterPage() {
+function RegisterPage() {
   const { configuration, error: configError, refresh } = usePublicEvent();
   const router = useRouter();
   const [form, setForm] = useState(emptyForm);
@@ -227,5 +229,9 @@ export default function RegisterPage() {
       )}
     </main>
   );
+}
+
+export default function Page() {
+  return supabaseEnabled() ? <CloudAttendeeRegistration mode="register" /> : <RegisterPage />;
 }
 

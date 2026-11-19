@@ -18,7 +18,8 @@ import { useStaff } from "../_lib/store";
 const VIA_LABEL = { qr: "สแกน QR", search: "ค้นหาด้วยชื่อ", walkin: "ลงทะเบียนหน้างาน" } as const;
 
 export default function ResultView({ status }: { status: ScanStatus }) {
-  const { lastResult } = useStaff();
+  const { lastResult,loading } = useStaff();
+  if(loading) return <p className={s.loading} role="status">กำลังตรวจสอบผลเช็กอิน…</p>;
   const result = lastResult && lastResult.status === status ? lastResult : null;
 
   if (!result) {
@@ -41,7 +42,7 @@ export default function ResultView({ status }: { status: ScanStatus }) {
     case "duplicate":
       return <Duplicate result={result} attendee={result.attendee!} />;
     case "wrong-event":
-      return <WrongEvent result={result} attendee={result.attendee!} />;
+      return <WrongEvent result={result} attendee={result.attendee} />;
     case "not-found":
       return <NotFound result={result} />;
   }
@@ -113,7 +114,7 @@ function Duplicate({ result, attendee }: Props) {
   );
 }
 
-function WrongEvent({ result, attendee }: Props) {
+function WrongEvent({ result, attendee }: {result:CheckInResult;attendee:Attendee|null}) {
   const other = result.attendeeEvent;
   return (
     <>
@@ -125,12 +126,12 @@ function WrongEvent({ result, attendee }: Props) {
         <hr className={s.divider} />
         <p className={s.meta}>งานที่ระบุใน QR</p>
         <p className={`${s.strong} ${s.textBad}`}>
-          {other?.name ?? "ไม่พบอีเวนต์"}
+          {other?.name ?? "QR ของอีเวนต์อื่น"}
           {other?.status === "ended" ? " (จบงานแล้ว)" : ""}
         </p>
-        <p className={s.meta}>
+        {attendee&&<p className={s.meta}>
           {fullName(attendee)} • รหัส {attendee.code} • ไม่ใช่ {result.event.id}
-        </p>
+        </p>}
       </Card>
       <Notice tone="bad" icon={<AlertCircleIcon />} title="ไม่มีการเช็กอินหรือเพิ่มยอด">
         ขอ QR ของ {result.event.name} หรือค้นหาชื่อผู้ลงทะเบียนในงานนี้
@@ -151,7 +152,7 @@ function NotFound({ result }: { result: CheckInResult }) {
   return (
     <>
       <PageHeader eyebrow="ผลการสแกน / ไม่พบในระบบ" title="ไม่พบ QR นี้ในระบบ" />
-      <Hero tone="bad" icon={<XIcon size={28} />} title="ยังไม่ได้เช็กอิน" caption={`ไม่มีผู้ลงทะเบียนรหัส ${result.code}`} />
+      <Hero tone="bad" icon={<XIcon size={28} />} title="ยังไม่ได้เช็กอิน" caption={result.code?`ไม่มีผู้ลงทะเบียนรหัส ${result.code}`:"ไม่พบ QR ส่วนบุคคลสำหรับงานนี้"} />
       <Notice tone="bad" icon={<AlertCircleIcon />} title="ตรวจสอบกับผู้เข้าร่วม">
         QR อาจหมดอายุหรือพิมพ์ผิด ลองค้นหาด้วยชื่อ หรือลงทะเบียน Walk-in ให้ผู้เข้าร่วม
       </Notice>

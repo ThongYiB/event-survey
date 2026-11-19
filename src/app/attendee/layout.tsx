@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Header from "./header";
 import BottomNav from "./bottom-nav";
 import "./attendee.css";
@@ -9,9 +10,9 @@ export default function AttendeeLayout({ children }: { children: React.ReactNode
   return (
     <div className="attendee-stage">
       <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-surface shadow-xl">
-        <Header />
+        <Suspense fallback={null}><Header /></Suspense>
         {children}
-        <BottomNav />
+        <Suspense fallback={null}><BottomNav /></Suspense>
       </div>
     </div>
   );

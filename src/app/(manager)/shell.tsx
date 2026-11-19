@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSelectedLayoutSegment } from "next/navigation";
+import { useState } from "react";
 import { initialDetails, useSaved } from "./store";
 import styles from "./manager.module.css";
 import { supabaseEnabled } from "@/lib/supabase/config";
@@ -21,14 +22,15 @@ const sections = [
 export function ManagerShell({ children }: { children: React.ReactNode }) {
   const segment = useSelectedLayoutSegment();
   const router = useRouter();
+  const [menuOpen,setMenuOpen]=useState(false);
   return (
     <div className={styles.shell}>
-      <aside className={styles.sidebar}>
-        <div className={styles.brand}><span aria-hidden="true">ES</span>Event Survey</div>
+      <aside className={styles.sidebar} data-menu-open={menuOpen} onKeyDown={event=>{if(event.key==="Escape")setMenuOpen(false);}}>
+        <div className={styles.brand}><span aria-hidden="true">ES</span>Event Survey<button className={styles.menuToggle} aria-label={menuOpen?"ปิดเมนู":"เปิดเมนู Event Manager"} aria-expanded={menuOpen} aria-controls="manager-menu" onClick={()=>setMenuOpen(!menuOpen)}>{menuOpen?"ปิด ✕":"เมนู ☰"}</button></div>
         <p className={styles.role}>Event Manager</p>
-        <nav aria-label="เมนู Event Manager">
+        <nav id="manager-menu" aria-label="เมนู Event Manager">
           {sections.map(([id, label]) => (
-            <Link key={id} href={`/${id}`} aria-current={segment === id || (segment === "dashboard" && id === "manager") ? "page" : undefined}>{label}</Link>
+            <Link key={id} href={`/${id}`} onNavigate={()=>setMenuOpen(false)} aria-current={segment === id || (segment === "dashboard" && id === "manager") ? "page" : undefined}>{label}</Link>
           ))}
         </nav>
         <Link className={styles.exit} href="/login" onClick={async (event) => {

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 const items = [
   {
@@ -35,6 +35,7 @@ const items = [
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const eventId = useSearchParams().get("event");
 
   return (
     <nav className="sticky bottom-0 mt-auto grid grid-cols-3 border-t border-black/5 bg-white" aria-label="เมนูผู้เข้าร่วมงาน">
@@ -43,7 +44,7 @@ export default function BottomNav() {
         return (
           <Link
             key={item.href}
-            href={item.href}
+            href={eventId ? `${item.href}?event=${encodeURIComponent(eventId)}` : item.href}
             aria-current={active ? "page" : undefined}
             className={`flex flex-col items-center gap-1 py-2.5 text-[11px] ${
               active ? "font-semibold text-brand" : "text-muted"

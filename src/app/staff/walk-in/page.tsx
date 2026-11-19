@@ -50,7 +50,7 @@ export default function WalkInPage() {
   const set = (k: keyof typeof form) => (v: string | boolean) => setForm((f) => ({ ...f, [k]: v }));
 
   return (
-    <WithSession>
+    <WithSession required={["เช็กอิน","ลงทะเบียน Walk-in"]}>
       {({ event }) => (
         <>
           <PageHeader eyebrow="STAFF / ลงทะเบียนหน้างาน" title="ลงทะเบียน Walk-in" />

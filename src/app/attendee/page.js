@@ -5,8 +5,10 @@ import { event } from "./event";
 import { usePublicEvent } from "@/components/public/use-public-event";
 import { eventDateLabel } from "@/lib/public-event";
 import { PublicLoadState } from "./event-state";
+import { supabaseEnabled } from "@/lib/supabase/config";
+import { CloudAttendeeRegistration } from "@/components/cloud/attendee-registration";
 
-export default function EventPage() {
+function EventPage() {
   const { configuration, error, refresh } = usePublicEvent();
   if (!configuration) return <PublicLoadState error={error} retry={refresh} />;
   const { details } = configuration;
@@ -76,5 +78,9 @@ export default function EventPage() {
       </div>
     </main>
   );
+}
+
+export default function Page() {
+  return supabaseEnabled() ? <CloudAttendeeRegistration mode="event" /> : <EventPage />;
 }
 

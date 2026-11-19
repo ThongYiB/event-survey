@@ -41,12 +41,14 @@ export interface EventStats {
 }
 
 export interface StaffUser {
+  id?: string;
   name: string;
   accountLabel: string;
 }
 
 /** GET /api/staff/session */
 export interface StaffSession {
+  access?: string[];
   staff: StaffUser;
   event: StaffEvent;
   stats: EventStats;

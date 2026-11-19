@@ -1,0 +1,5 @@
+import {randomBytes,createHash} from 'node:crypto';
+import {requireCloudProfile,CloudError,cloudErrorResponse} from '@/server/cloud/auth';
+import {getCloudManagerData} from '@/server/cloud/events';
+import {isSameOrigin} from '@/server/manager-session';
+export async function POST(request:Request){try{if(!isSameOrigin(request))throw new CloudError('ไม่สามารถสร้างคำเชิญจากเว็บไซต์อื่น',403);const {client,profile}=await requireCloudProfile(['event_manager']);const {event}=await getCloudManagerData(client,profile);if(!event)throw new CloudError('เลือกงานก่อน',404);const token=randomBytes(32).toString('hex'),expires=new Date(Date.now()+7*86400000).toISOString();const {error}=await client.rpc('set_staff_invite',{p_event:event.id,p_hash:createHash('sha256').update(token).digest('hex'),p_expires:expires});if(error)throw new CloudError('สร้างคำเชิญไม่ได้',503);return Response.json({path:`/staff-join?event=${event.id}&invite=${token}`,expires},{headers:{'Cache-Control':'private, no-store'}});}catch(e){return cloudErrorResponse(e);}}

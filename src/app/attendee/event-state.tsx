@@ -4,12 +4,15 @@ import Link from "next/link";
 import { defaultEventDetails, eventDateLabel } from "@/lib/public-event";
 import { usePublicEvent } from "@/components/public/use-public-event";
 import styles from "./feedback.module.css";
+import {useSearchParams} from 'next/navigation';
 
 export function PublicLoadState({ error, retry }: { error: string; retry: () => void }) {
   return <main className={styles.page}><p role={error ? "alert" : "status"}>{error || "กำลังโหลดข้อมูลอีเวนต์…"}</p>{error && <button className={styles.secondary} onClick={retry}>ลองอีกครั้ง</button>}</main>;
 }
 
 export function ClosedEvent({ kind, details }: { kind: "registration" | "survey"; details: typeof defaultEventDetails }) {
+  const id=useSearchParams().get('event');
+  const href=(path:string)=>id?`${path}?event=${encodeURIComponent(id)}`:path;
   const registration = kind === "registration";
   return <main className={styles.page}>
     <header className={styles.intro}>
@@ -26,14 +29,14 @@ export function ClosedEvent({ kind, details }: { kind: "registration" | "survey"
     </section>
     <aside className={styles.notice}><strong>{registration ? "ลงทะเบียนไว้แล้ว?" : "ขอบคุณสำหรับทุกความคิดเห็น"}</strong><p>{registration ? "ดู QR ส่วนบุคคลของคุณเพื่อแสดงต่อ Staff ในวันงาน สถานะนี้ไม่มีผลกับการลงทะเบียนเดิม" : "คำตอบที่ส่งไว้เรียบร้อยแล้วจะยังอยู่ในรายงานของงาน"}</p></aside>
     <div className={styles.actions}>
-      {registration && <Link className={styles.secondary} href="/attendee/ticket">ดู QR ส่วนบุคคล</Link>}
-      <Link className={styles.secondary} href="/attendee">กลับไปดูรายละเอียดงาน</Link>
+      {registration && <Link className={styles.secondary} href={href('/attendee/ticket')}>ดู QR ส่วนบุคคล</Link>}
+      <Link className={styles.secondary} href={href('/attendee')}>กลับไปดูรายละเอียดงาน</Link>
     </div>
   </main>;
 }
 
 export function ClosedEventPage({ kind }: { kind: "registration" | "survey" }) {
-  const { configuration, error, refresh } = usePublicEvent();
+  const { configuration, error, refresh } = usePublicEvent(useSearchParams().get('event')||undefined);
   if (!configuration) return <PublicLoadState error={error} retry={refresh} />;
   return <ClosedEvent kind={kind} details={configuration.details} />;
 }

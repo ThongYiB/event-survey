@@ -99,6 +99,7 @@ const request = (pathname) => new NextRequest(`https://event-survey.example${pat
   assert.equal((await supabaseProxy(request("/admin/accounts"))).headers.get("location"), "https://event-survey.example/set-password");
   profile = { ...activeAdmin, role: "staff" };
   assert.equal((await supabaseProxy(request("/admin/accounts"))).headers.get("location"), "https://event-survey.example/staff");
-  assert.equal((await supabaseProxy(request("/api/public/event"))).status, 503);
+  assert.equal((await supabaseProxy(request("/api/public/survey"))).headers.get("x-middleware-next"), "1");
+  assert.equal((await supabaseProxy(request("/api/public/unknown"))).status, 503);
   console.log("PASS: faster proxy retains API authentication, role restrictions, account status and JWT checks");
 })().catch((error) => { console.error(error); process.exitCode = 1; });

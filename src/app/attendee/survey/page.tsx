@@ -1,15 +1,18 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useRef, useState, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { usePublicEvent } from "@/components/public/use-public-event";
 import { surveyOptions } from "@/lib/public-event";
 import { ClosedEvent, PublicLoadState } from "../event-state";
 import styles from "../feedback.module.css";
 
-export default function SurveyPage() {
+
+
+function SurveyPage() {
   const router = useRouter();
-  const { configuration, error: loadError, refresh } = usePublicEvent();
+  const eventId=useSearchParams().get("event")||undefined;
+  const { configuration, error: loadError, refresh } = usePublicEvent(eventId);
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
@@ -39,11 +42,11 @@ export default function SurveyPage() {
         requestKey.current ||= Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) => byte.toString(16).padStart(2, "0")).join("");
         try { localStorage.setItem(`event-survey:survey-key:${configuration.id}`, requestKey.current); } catch { /* Keep the key in memory. */ }
       }
-      const response = await fetch("/api/public/survey", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ requestKey: requestKey.current, revision: configuration.revision, answers }) });
+      const response = await fetch("/api/public/survey", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventId: configuration.id, requestKey: requestKey.current, revision: configuration.revision, answers }) });
       const result = await response.json();
-      if (result.code === "survey-closed") { router.replace("/attendee/survey/closed"); return; }
+      if (result.code === "survey-closed") { router.replace(`/attendee/survey/closed?event=${configuration.id}`); return; }
       if (!response.ok) { setError(result.message || "ส่งคำตอบไม่สำเร็จ กรุณาลองอีกครั้ง"); setErrors(result.errors || {}); setUpdated(result.code === "survey-updated"); return; }
-      router.replace("/attendee/survey/thanks");
+      router.replace(`/attendee/survey/thanks?event=${configuration.id}`);
     } catch { setError("เชื่อมต่อระบบไม่ได้ คำตอบยังอยู่ในหน้านี้ กรุณาลองส่งอีกครั้ง"); }
     finally { setSaving(false); }
   }
@@ -69,4 +72,8 @@ export default function SurveyPage() {
       <p className={styles.muted}>ไม่ต้องเข้าสู่ระบบ · ไม่ต้องระบุชื่อในแบบสอบถาม</p>
     </form>
   </main>;
+}
+
+export default function Page() {
+  return <Suspense fallback={<p>กำลังโหลดแบบประเมิน…</p>}><SurveyPage /></Suspense>;
 }

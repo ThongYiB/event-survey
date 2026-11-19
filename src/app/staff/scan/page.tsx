@@ -26,13 +26,16 @@ const SIMS: { status: ScanStatus; label: string; tone: "ok" | "warn" | "bad"; Ic
 
 export default function ScanPage() {
   const router = useRouter();
-  const { checkIn, simulateScan } = useStaff();
+  const { checkIn, simulateScan,cloudMode } = useStaff();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const lastTextRef = useRef<{ text: string; at: number } | null>(null);
+  const inFlight=useRef(false);
 
   const run = useCallback(
     async (task: () => Promise<ScanStatus>) => {
+      if(inFlight.current) return;
+      inFlight.current=true;
       setBusy(true);
       setError(null);
       try {
@@ -41,6 +44,7 @@ export default function ScanPage() {
       } catch (e) {
         setError(e instanceof StaffApiError ? e.message : "เช็กอินไม่สำเร็จ ลองอีกครั้ง");
         setBusy(false);
+        inFlight.current=false;
       }
     },
     [router],
@@ -58,7 +62,7 @@ export default function ScanPage() {
   );
 
   return (
-    <WithSession>
+    <WithSession required={["เช็กอิน"]}>
       {({ event }) => (
         <>
           <PageHeader eyebrow="STAFF / QR SCANNER" title="สแกนเพื่อเช็กอิน" />
@@ -75,11 +79,11 @@ export default function ScanPage() {
           )}
 
           <p className={s.meta}>
-            วาง QR ส่วนบุคคลในกรอบ{IS_DEV ? " หรือเลือกผลลัพธ์จำลองด้านล่าง" : ""}
+            วาง QR ส่วนบุคคลในกรอบ{IS_DEV&&!cloudMode ? " หรือเลือกผลลัพธ์จำลองด้านล่าง" : ""}
           </p>
 
           <div className={s.stack}>
-            {IS_DEV &&
+            {IS_DEV && !cloudMode &&
               SIMS.map(({ status, label, tone, Icon }) => (
                 <button
                   key={status}

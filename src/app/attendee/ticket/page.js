@@ -6,8 +6,10 @@ import QRCode from "qrcode";
 import { event, loadRegistration } from "../event";
 import { usePublicEvent } from "@/components/public/use-public-event";
 import { eventDateLabel } from "@/lib/public-event";
+import { supabaseEnabled } from "@/lib/supabase/config";
+import { CloudAttendeeRegistration } from "@/components/cloud/attendee-registration";
 
-export default function TicketPage() {
+function TicketPage() {
   const { configuration } = usePublicEvent();
   const [ticket, setTicket] = useState(null);
 
@@ -95,5 +97,9 @@ export default function TicketPage() {
       )}
     </main>
   );
+}
+
+export default function Page() {
+  return supabaseEnabled() ? <CloudAttendeeRegistration mode="ticket" /> : <TicketPage />;
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { formatDateLong } from "@/lib/staff/format";
 import type { ScanStatus } from "@/lib/staff/types";
 import s from "../staff.module.css";
@@ -31,17 +31,34 @@ export default function ScanPage() {
   const [error, setError] = useState<string | null>(null);
   const lastTextRef = useRef<{ text: string; at: number } | null>(null);
   const inFlight=useRef(false);
+  const activationRef=useRef(0);
+
+  // Next.js preserves this page inside Activity after showing a scan result.
+  // Re-entering must start a new scan cycle, including when using browser Back.
+  useEffect(() => {
+    const activation=++activationRef.current;
+    inFlight.current=false;
+    lastTextRef.current=null;
+    const reset=window.setTimeout(()=>{setBusy(false);setError(null);},0);
+    return () => {
+      window.clearTimeout(reset);
+      activationRef.current=activation+1;
+    };
+  }, []);
 
   const run = useCallback(
     async (task: () => Promise<ScanStatus>) => {
       if(inFlight.current) return;
       inFlight.current=true;
+      const activation=activationRef.current;
       setBusy(true);
       setError(null);
       try {
         const status = await task();
+        if(activation!==activationRef.current) return;
         router.push(`/staff/result/${status}`);
       } catch (e) {
+        if(activation!==activationRef.current) return;
         setError(e instanceof StaffApiError ? e.message : "เช็กอินไม่สำเร็จ ลองอีกครั้ง");
         setBusy(false);
         inFlight.current=false;

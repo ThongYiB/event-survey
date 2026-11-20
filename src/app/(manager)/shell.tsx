@@ -30,7 +30,7 @@ export function ManagerShell({ children }: { children: React.ReactNode }) {
         <p className={styles.role}>Event Manager</p>
         <nav id="manager-menu" aria-label="เมนู Event Manager">
           {sections.map(([id, label]) => (
-            <Link key={id} href={`/${id}`} onNavigate={()=>setMenuOpen(false)} aria-current={segment === id || (segment === "dashboard" && id === "manager") ? "page" : undefined}>{label}</Link>
+            <Link key={id} href={`/${id}`} prefetch={true} onNavigate={()=>setMenuOpen(false)} aria-current={segment === id || (segment === "dashboard" && id === "manager") ? "page" : undefined}>{label}</Link>
           ))}
         </nav>
         <Link className={styles.exit} href="/login" onClick={async (event) => {

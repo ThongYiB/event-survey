@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter,usePathname } from "next/navigation";
 import Link from "next/link";
 import type { CloudManagerData } from "@/lib/cloud-manager";
 import { CloudManagerContext } from "./manager-context";
 import { ManagerShell } from "@/app/(manager)/shell";
 import styles from "@/app/(manager)/manager.module.css";
+import {demoEvent,demoTeam} from '@/lib/demo-data';
+import {DemoLabel} from './demo-label';
 
 export function CloudManagerProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<CloudManagerData | null>(null);
@@ -15,19 +17,21 @@ export function CloudManagerProvider({ children }: { children: ReactNode }) {
   const [version, setVersion] = useState(0);
   const [creating,setCreating]=useState(false);
   const router = useRouter();
+  const needsMedia=usePathname()==='/kiosk';
   useEffect(() => {
     const controller = new AbortController();
-    void fetch("/api/manager/events", { cache: "no-store", signal: controller.signal }).then(async (response) => {
+    void fetch(`/api/manager/events${needsMedia?'?media=1':''}`, { cache: "no-store", signal: controller.signal }).then(async (response) => {
       const result = await response.json(); if (!response.ok) throw new Error(result.message); return result as CloudManagerData;
     }).then((result) => { if (!controller.signal.aborted) { setData(result); setError(""); } }).catch((reason) => { if (!controller.signal.aborted) setError(reason.message || "โหลดอีเวนต์ไม่ได้"); });
     return () => controller.abort();
-  }, [version]);
+  }, [version,needsMedia]);
 
   async function save(key: string, value: unknown) {
     if (busy || !data) return false;
+    if(!data.event){setError('หน้านี้ใช้ข้อมูลจำลอง สร้างอีเวนต์จริงก่อนบันทึก');return false;}
     setBusy(true); setError("");
     try {
-      const response = await fetch("/api/manager/events", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key, value }) });
+      const response = await fetch("/api/manager/events", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key, value,media:needsMedia }) });
       const result = await response.json(); if (!response.ok) throw new Error(result.message);
       setData(result); return true;
     } catch (reason) { setError(reason instanceof Error ? reason.message : "บันทึกไม่ได้"); return false; }
@@ -35,10 +39,11 @@ export function CloudManagerProvider({ children }: { children: ReactNode }) {
   }
 
   async function select(id: string) {
+    if(id==='demo-event')return true;
     if (busy || !data) return false;
     setBusy(true); setError("");
     try {
-      const response = await fetch("/api/manager/active-event", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+      const response = await fetch("/api/manager/active-event", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id,media:needsMedia }) });
       const result = await response.json(); if (!response.ok) throw new Error(result.message);
       setData(result); return true;
     } catch (reason) { setError(reason instanceof Error ? reason.message : "เลือกอีเวนต์ไม่ได้"); return false; }
@@ -57,7 +62,9 @@ export function CloudManagerProvider({ children }: { children: ReactNode }) {
   }
 
   const pending: CloudManagerData = { profile: { id: "", name: "" }, events: [], event: null, team: [] };
-  return <CloudManagerContext.Provider value={{ data: data ?? pending, busy: busy || !data, save, select }}><ManagerShell>
+  const preview=!!data&&!data.events.length;
+  const shown:CloudManagerData=data&&preview?{...data,preview:true,mediaLoaded:true,events:[demoEvent],event:demoEvent,team:demoTeam}:data??pending;
+  return <CloudManagerContext.Provider value={{ data:shown, busy: busy || !data, save, select }}><ManagerShell>
     {!data && <section className={styles.panel}><p role={error ? "alert" : "status"}>{error || "กำลังโหลดอีเวนต์จาก Supabase…"}</p>{error && <><button onClick={() => setVersion((value) => value + 1)}>ลองอีกครั้ง</button><Link href="/login">ไปหน้าเข้าสู่ระบบ</Link></>}</section>}
     {data && <>
       <div className={styles.eventToolbar}>
@@ -67,8 +74,9 @@ export function CloudManagerProvider({ children }: { children: ReactNode }) {
       {(creating||!data.event)&&<form className={styles.panel} onSubmit={create}><h2>สร้างอีเวนต์ใหม่</h2><label>ชื่ออีเวนต์<input name="name" required maxLength={200} placeholder="ระบุชื่ออีเวนต์" disabled={busy} autoFocus /></label><div className={styles.item}><button disabled={busy}>สร้างอีเวนต์</button>{data.event&&<button type="button" className={styles.secondary} onClick={()=>setCreating(false)}>ยกเลิก</button>}</div></form>}
       {error&&<p role="alert" className={styles.error}>{error}</p>}
     </>}
-    {data && !data.event && <section className={styles.panel}><h1>ยังไม่มีอีเวนต์</h1><p>สร้างอีเวนต์แรกจากแบบฟอร์มด้านบนได้เลย</p></section>}
+    {preview&&<DemoLabel/>}
+    {needsMedia&&data?.event&&!data.mediaLoaded&&<p role="status">กำลังโหลดสื่อของอีเวนต์…</p>}
     {/* Keep Next's page slot mounted during loading and empty states. */}
-    <div key={data?.event?.id || "empty"} hidden={!data?.event}>{children}</div>
+    <div key={shown.event?.id || "empty"} hidden={!shown.event||(needsMedia&&!shown.mediaLoaded)}>{children}</div>
   </ManagerShell></CloudManagerContext.Provider>;
 }

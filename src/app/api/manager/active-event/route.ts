@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     const { client, profile } = await requireCloudProfile(["event_manager"]);
     const body = await request.json().catch(() => null);
     if (typeof body?.id !== "string") throw new CloudError("เลือกอีเวนต์");
-    const state = await getCloudManagerData(client, profile, body.id);
+    const state = await getCloudManagerData(client, profile, body.id,body.media===true);
     if (state.event?.id !== body.id) throw new CloudError("ไม่พบอีเวนต์ที่คุณมีสิทธิ์", 404);
     const response = NextResponse.json(state);
     response.cookies.set(activeEventCookie, body.id, { httpOnly: true, sameSite: "lax", secure: request.nextUrl.protocol === "https:", path: "/", maxAge: 30 * 86400 });

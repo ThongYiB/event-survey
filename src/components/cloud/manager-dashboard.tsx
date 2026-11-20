@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useCloudManager } from "./manager-context";
 import { useCheckinSummary } from "./checkin-summary";
+import {demoStats} from '@/lib/demo-data';
+import {DemoLabel} from './demo-label';
 import styles from "@/app/(manager)/manager.module.css";
 
 export function CloudManagerDashboard() {
@@ -14,11 +16,14 @@ export function CloudManagerDashboard() {
   const {data,error}=useCheckinSummary(version);
   if (!cloud) return <p role="status">กำลังโหลดอีเวนต์…</p>;
   const active=cloud.data.event;
-  const stats=data?.find(e=>e.eventId===active?.id)?.stats;
+  const actual=data?.find(e=>e.eventId===active?.id)?.stats;
+  const demo=!!cloud.data.preview||actual?.registered===0;
+  const stats=demo?demoStats:actual;
   const labels={draft:"ฉบับร่าง",open:"กำลังเปิดรับ",closed:"สิ้นสุดแล้ว"};
   return <div className={styles.stack}>
     <header className={styles.heading}><div><h1>ภาพรวมอีเวนต์</h1><p>ยินดีต้อนรับ {cloud.data.profile.name} · จัดการทุกขั้นตอนของงานในพื้นที่เดียว</p></div><button className={styles.secondary} onClick={()=>setVersion(v=>v+1)}>อัปเดตข้อมูล</button></header>
     {error&&<p className={styles.error} role="alert">{error}</p>}
+    {demo&&!cloud.data.preview&&<DemoLabel/>}
     <div className={styles.summary}>{[["อีเวนต์ทั้งหมด",cloud.data.events.length],...["open","draft","closed"].map(status=>[labels[status as keyof typeof labels],cloud.data.events.filter(e=>e.status===status).length])].map(([label,value])=><div className={styles.summaryCard} key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>
     {active&&<><section className={styles.panel}><p className={styles.panelLabel}>อีเวนต์ที่กำลังดู</p><div className={styles.currentBody}><div className={styles.currentInfo}><span className={`${styles.badge} ${active.status==="open"?styles.badgeOpen:active.status==="closed"?styles.badgeClosed:styles.badgeDraft}`}>{labels[active.status]}</span><h2>{active.name}</h2><p className={styles.currentMeta}>{active.details.startDate} · {active.details.startTime}–{active.details.endTime} น.</p><p className={styles.currentMeta}>{active.details.venue}</p></div><Link href="/details" className={styles.outlineLink}>จัดการอีเวนต์ →</Link></div></section>
       <div className={styles.metrics}>{[["ลงทะเบียน",stats?.registered??"…","คน"],["เช็กอินแล้ว",stats?.checkedIn??"…","คน"],["รอเช็กอิน",stats?.remaining??"…","คน"],["อัตราเข้าร่วม",stats?`${stats.registered?(100*stats.checkedIn/stats.registered).toFixed(1):"0.0"}%`:"…","เทียบจำนวนลงทะเบียน"]].map(([label,value,note])=><div key={label} className={styles.metricCard}><span>{label}</span><strong>{value}</strong><small>{note}</small></div>)}</div>

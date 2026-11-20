@@ -11,6 +11,7 @@ export function usePublicEvent(eventId?:string) {
   const [version, setVersion] = useState(0);
   const refresh = useCallback(() => setVersion((value) => value + 1), []);
   useEffect(() => {
+    if(supabaseEnabled()&&!eventId)return;
     const controller = new AbortController();
     void fetch(`/api/public/event${eventId?`?event=${encodeURIComponent(eventId)}`:""}`, { cache: "no-store", signal: controller.signal })
       .then(async (response) => { const result = await response.json(); if (!response.ok) throw new Error(result.message || "โหลดข้อมูลอีเวนต์ไม่ได้");

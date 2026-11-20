@@ -6,22 +6,28 @@ import { useCheckinSummary } from "./checkin-summary";
 import { ScreenHeading } from "@/app/(manager)/shell";
 import s from "@/app/(manager)/manager.module.css";
 import chart from "@/app/(manager)/report.module.css";
+import {demoSummary} from '@/lib/demo-data';
+import {DemoLabel} from './demo-label';
 
 export function CloudEventReport() {
   const event=useCloudManager()?.data.event;
   const [version,setVersion]=useState(0);
   const {data,error}=useCheckinSummary(version);
-  const record=data?.find(row=>row.eventId===event?.id);
+  const actual=data?.find(row=>row.eventId===event?.id);
+  const preview=useCloudManager()?.data.preview;
+  const demo=!!preview||actual?.stats.registered===0;
+  const record=demo?demoSummary:actual;
   const stats=record?.stats;
   function exportCsv() {
     if(!record||!event)return;
-    const rows=[['อีเวนต์',event.name],['ลงทะเบียน',record.stats.registered],['เช็กอิน',record.stats.checkedIn],['รอเช็กอิน',record.stats.remaining],['Walk-in',record.walkin],['ช่วงเวลา (ประเทศไทย)','จำนวนเช็กอิน'],...record.timeline.map(row=>[row.time,row.count])];
+    const rows=[['ชนิดข้อมูล',demo?'ข้อมูลจำลอง':'ข้อมูลจริง'],['อีเวนต์',event.name],['ลงทะเบียน',record.stats.registered],['เช็กอิน',record.stats.checkedIn],['รอเช็กอิน',record.stats.remaining],['Walk-in',record.walkin],['ช่วงเวลา (ประเทศไทย)','จำนวนเช็กอิน'],...record.timeline.map(row=>[row.time,row.count])];
     const csv=rows.map(row=>row.map(cell=>`"${String(cell).replace(/^[\s]*[=+@-]/,"'$&").replaceAll('"','""')}"`).join(',')).join('\r\n');
     const url=URL.createObjectURL(new Blob(['\uFEFF',csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='event-attendance-report.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
   return <div className={`${s.stack} ${chart.report}`}>
     <ScreenHeading title="รายงานผลอีเวนต์" description="สรุปการลงทะเบียนและการเข้าร่วมงาน"><div className={s.item}><button className={s.secondary} onClick={()=>setVersion(v=>v+1)}>อัปเดตรายงาน</button><button className={s.secondary} disabled={!record} onClick={()=>window.print()}>พิมพ์ / บันทึก PDF</button><button disabled={!record} onClick={exportCsv}>ส่งออก CSV</button></div></ScreenHeading>
     {error&&<p role="alert" className={s.error}>{error}</p>}
+    {demo&&<DemoLabel/>}
     {!data&&!error&&<p role="status">กำลังโหลดรายงาน…</p>}
     {stats&&record&&<>
       <div className={s.metrics}>{[["ลงทะเบียน",stats.registered,"คน"],["เช็กอินแล้ว",stats.checkedIn,"คน"],["Walk-in",record.walkin,"รวมอยู่ในยอดลงทะเบียน"],["อัตราเข้าร่วม",`${stats.registered?(100*stats.checkedIn/stats.registered).toFixed(1):"0.0"}%`,`${stats.checkedIn} จาก ${stats.registered} คน`]].map(([label,value,note])=><div className={s.metricCard} key={label}><span>{label}</span><strong>{value}</strong><small>{note}</small></div>)}</div>

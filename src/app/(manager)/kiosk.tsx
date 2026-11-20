@@ -7,6 +7,7 @@ import Link from "next/link";
 import styles from "./manager.module.css";
 import kiosk from "./kiosk.module.css";
 import { useCloudManager } from "@/components/cloud/manager-context";
+import {DemoLabel} from '@/components/cloud/demo-label';
 
 type Media = { id: string; name: string; type: "image" | "video"; src: string; seconds: number };
 type Settings = { published?:boolean;screens: string[]; startsAt: string; endsAt: string; media: Media[] };
@@ -132,6 +133,7 @@ export default function KioskPage() {
         </div>
         <section className={styles.panel}>
           <h2>ตัวอย่างบนจอ</h2>
+          {!media&&<DemoLabel/>}
           <div className={kiosk.preview} ref={preview}>
             {media ? media.type === "video" ? <video src={media.src} controls playsInline aria-label={media.name} /> :
               // eslint-disable-next-line @next/next/no-img-element

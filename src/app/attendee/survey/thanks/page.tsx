@@ -8,9 +8,13 @@ import { usePublicEvent } from "@/components/public/use-public-event";
 
 import { PublicLoadState } from "../../event-state";
 import styles from "../../feedback.module.css";
+import {PublicDemo} from '@/components/cloud/public-demo';
+import {supabaseEnabled} from '@/lib/supabase/config';
 
 function ThanksPage() {
-  const { configuration, error, refresh } = usePublicEvent(useSearchParams().get("event")||undefined);
+  const eventId=useSearchParams().get('event')||undefined;
+  const { configuration, error, refresh } = usePublicEvent(eventId);
+  if(supabaseEnabled()&&!eventId)return <PublicDemo mode="thanks"/>;
   if (!configuration) return <PublicLoadState error={error} retry={refresh} />;
   return <main className={styles.page}>
     <h1>ขอบคุณสำหรับความคิดเห็น</h1>

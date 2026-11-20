@@ -7,10 +7,13 @@ import { LinkQr } from "@/components/public/link-qr";
 import { ScreenHeading } from "@/app/(manager)/shell";
 import s from "@/app/(manager)/manager.module.css";
 import {CloudSurveyPublication} from './survey-manager';
+import {demoRegistrations} from '@/lib/demo-data';
+import {DemoLabel} from './demo-label';
 
 export function CloudRegistrationQr() {
   const cloud = useCloudManager();
   const id = cloud?.data.event?.id;
+  const preview=cloud?.data.preview;
   const [publication, setPublication] = useState<{ registration_open: boolean; capacity: number; revision: number } | null>(null);
   const [open, setOpen] = useState(false);
   const [capacity, setCapacity] = useState(0);
@@ -20,13 +23,13 @@ export function CloudRegistrationQr() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   useEffect(() => {
-    if (!id) return;
+    if (!id||preview) return;
     const controller = new AbortController();
     void fetch("/api/manager/public-event", { signal: controller.signal, cache: "no-store" }).then(async (response) => {
       const data = await response.json(); if (!response.ok) throw new Error(data.message); return data;
     }).then((data) => { if (!controller.signal.aborted) { setPublication(data.publication); setOpen(data.publication?.registration_open ?? false); setCapacity(data.publication?.capacity ?? 0); setLoaded(true); } }).catch((error) => { if (!controller.signal.aborted) setError(error.message); });
     return () => controller.abort();
-  }, [id, version]);
+  }, [id, version,preview]);
   async function publish(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setError(""); setMessage("");
     try {
@@ -38,6 +41,7 @@ export function CloudRegistrationQr() {
     finally { setBusy(false); }
   }
   if (!id) return null;
+  if(preview)return <div className={s.stack}><ScreenHeading title="QR Center" description="ตัวอย่างหน้าจัดการ QR"/><DemoLabel/><div className={s.fields}>{['QR ลงทะเบียน','QR แบบประเมิน'].map(title=><section className={s.panel} key={title}><h2>{title}</h2><div style={{display:'grid',placeItems:'center',height:220,background:'#edf6f6',color:'#007f82',fontSize:56}}>QR</div><small>ตัวอย่างตำแหน่ง QR · สร้างอีเวนต์เพื่อรับ QR ที่ใช้งานได้</small></section>)}</div></div>;
   return <div className={s.stack}>
     <ScreenHeading title="QR Center" description="จัดการ QR และลิงก์สำหรับผู้เข้าร่วมงาน"><Link href={`/display?event=${id}`} target="_blank" rel="noreferrer" className={s.outlineLink}>เปิดจอประชาสัมพันธ์</Link></ScreenHeading>
     {error&&<p className={s.error} role="alert">{error}</p>}{message&&<p className={s.notice} role="status">{message}</p>}
@@ -54,25 +58,29 @@ type Checkin={checked_at:string;via:string};
 type RegistrationRow = { id: string; name: string; email: string; answers: Record<string, string>; form_fields: { id: string; label: string }[]; created_at: string;source:string;checkins:Checkin|Checkin[]|null };
 const checkedIn=(row:RegistrationRow)=>Array.isArray(row.checkins)?row.checkins[0]:row.checkins;
 export function CloudRegistrationList() {
-  const id = useCloudManager()?.data.event?.id;
-  const [data, setData] = useState<{ rows: RegistrationRow[]; total: number }>();
+  const cloud=useCloudManager(),id=cloud?.data.event?.id,preview=cloud?.data.preview;
+  const [liveData, setData] = useState<{ rows: RegistrationRow[]; total: number }>();
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [version, setVersion] = useState(0);
   const [selected, setSelected] = useState<RegistrationRow | null>(null);
+  const demo=!!preview||(liveData?.total===0&&!search);
+  const rows=demoRegistrations.filter(row=>`${row.name} ${row.email}`.toLowerCase().includes(search.toLowerCase()));
+  const data=demo?{rows,total:rows.length}:liveData;
   useEffect(() => {
-    if (!id) return;
+    if (!id||preview) return;
     const controller = new AbortController();
     void fetch(`/api/manager/registrations?event=${id}&page=${page}&q=${encodeURIComponent(search)}`, { signal: controller.signal, cache: "no-store" }).then(async (response) => {
       const value = await response.json(); if (!response.ok) throw new Error(value.message); return value;
     }).then((value) => { if (!controller.signal.aborted) { setData(value); setError(""); } }).catch((error) => { if (!controller.signal.aborted) setError(error.message); });
     return () => controller.abort();
-  }, [id, search, page, version]);
+  }, [id, search, page, version,preview]);
   return <div className={s.stack}>
     <ScreenHeading title="ผู้ลงทะเบียน" description="รายชื่อและสถานะเช็กอินของผู้เข้าร่วมงาน"><div className={s.item}><button onClick={() => setVersion(v => v+1)}>อัปเดตรายชื่อ</button><Link className={s.outlineLink} href="/qr-center">QR ลงทะเบียน</Link></div></ScreenHeading>
     {error&&<p className={s.error} role="alert">{error}</p>}
+    {demo&&<DemoLabel/>}
     <section className={s.panel}><h2>ผู้ลงทะเบียน {data?.total??"…"} คน</h2>
       <form className={s.item} onSubmit={e=>{e.preventDefault();setSearch(query);setPage(0);}}><label>ค้นหาชื่อหรืออีเมล<input type="search" value={query} maxLength={100} onChange={e=>setQuery(e.target.value)} placeholder="ชื่อ / name@example.com"/></label><button>ค้นหา</button></form>
       <div className={s.scroll}><table><thead><tr><th>ชื่อ-นามสกุล / อีเมล</th><th>ช่องทาง</th><th>เวลาลงทะเบียน</th><th>สถานะเช็กอิน</th><th>จัดการ</th></tr></thead><tbody>{data?.rows.map(row=><tr key={row.id}><td><strong>{row.name}</strong><small>{row.email}</small></td><td>{row.source==="walkin"?"Walk-in":"ลงทะเบียนล่วงหน้า"}</td><td>{new Date(row.created_at).toLocaleString("th-TH",{timeZone:"Asia/Bangkok"})}</td><td><span className={`${s.badge} ${checkedIn(row)?s.badgeOpen:s.badgeDraft}`}>{checkedIn(row)?"เช็กอินแล้ว":"รอเช็กอิน"}</span></td><td><button className={s.secondary} onClick={()=>setSelected(row)}>ดูข้อมูล</button></td></tr>)}{data&&!data.rows.length&&<tr><td colSpan={5}>ยังไม่มีรายชื่อที่ตรงกับเงื่อนไข</td></tr>}</tbody></table></div>

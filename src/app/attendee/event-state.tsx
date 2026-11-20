@@ -5,6 +5,8 @@ import { defaultEventDetails, eventDateLabel } from "@/lib/public-event";
 import { usePublicEvent } from "@/components/public/use-public-event";
 import styles from "./feedback.module.css";
 import {useSearchParams} from 'next/navigation';
+import {PublicDemo} from '@/components/cloud/public-demo';
+import {supabaseEnabled} from '@/lib/supabase/config';
 
 export function PublicLoadState({ error, retry }: { error: string; retry: () => void }) {
   return <main className={styles.page}><p role={error ? "alert" : "status"}>{error || "กำลังโหลดข้อมูลอีเวนต์…"}</p>{error && <button className={styles.secondary} onClick={retry}>ลองอีกครั้ง</button>}</main>;
@@ -36,7 +38,9 @@ export function ClosedEvent({ kind, details }: { kind: "registration" | "survey"
 }
 
 export function ClosedEventPage({ kind }: { kind: "registration" | "survey" }) {
-  const { configuration, error, refresh } = usePublicEvent(useSearchParams().get('event')||undefined);
+  const eventId=useSearchParams().get('event')||undefined;
+  const { configuration, error, refresh } = usePublicEvent(eventId);
+  if(supabaseEnabled()&&!eventId)return <PublicDemo mode="closed"/>;
   if (!configuration) return <PublicLoadState error={error} retry={refresh} />;
   return <ClosedEvent kind={kind} details={configuration.details} />;
 }

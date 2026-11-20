@@ -8,6 +8,7 @@ import { registrationAnswers, type PublishedRegistration, type RegistrationTicke
 import { eventDateLabel } from "@/lib/public-event";
 import s from "@/app/attendee/feedback.module.css";
 import formStyles from "./registration.module.css";
+import {PublicDemo} from './public-demo';
 
 function useResource<T>(url: string | null) {
   const [result, setResult] = useState<{ url: string; data?: T; error?: string }>();
@@ -38,6 +39,7 @@ function Ticket({ eventId }: { eventId: string }) {
 function PublicRegistration({ mode }: { mode: string }) {
   const params = useSearchParams();
   const eventId = params.get("event") || "";
+  if(!eventId)return <PublicDemo mode={mode}/>;
   const href = (path: string) => `${path}${eventId ? `?event=${eventId}` : ""}`;
   return mode === "ticket" ? <Ticket eventId={eventId} /> : mode === "pending" ? <main className={s.page}><h1>แบบสอบถามหลังจบงาน</h1><p>ส่วนรับคำตอบแบบสอบถามกำลังเชื่อมข้อมูลในขั้นถัดไป</p><Link href={href("/attendee")}>กลับไปดูอีเวนต์</Link></main> : !eventId ? <main className={s.page}><h1>เข้าร่วมอีเวนต์</h1><p>เปิดจากลิงก์หรือสแกน QR ลงทะเบียนของอีเวนต์ที่ต้องการ เพื่อให้ลงทะเบียนถูกงาน</p><Link className={s.secondary} href="/attendee/ticket">ตั๋วของฉัน</Link></main> : <RegistrationForm eventId={eventId} mode={mode} />;
 }

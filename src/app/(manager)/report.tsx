@@ -6,17 +6,24 @@ import type { SurveyField } from "@/lib/public-event";
 import { ScreenHeading } from "./shell";
 import styles from "./manager.module.css";
 import reports from "./report.module.css";
+import {useCloudManager} from '@/components/cloud/manager-context';
+import {demoSurvey} from '@/lib/demo-data';
+import {DemoLabel} from '@/components/cloud/demo-label';
 
 type Results = { eventName: string; registered: number; checkedIn: number; responses: number; questions: { field: SurveyField; total: number; choices: Record<string, number>; texts: string[] }[] };
 const percentage = (value: number, total: number) => total ? ((value / total) * 100).toFixed(1) : "0.0";
 
 export default function ReportsPage() {
-  const [data, setData] = useState<Results | null>(null);
+  const [liveData, setData] = useState<Results | null>(null);
+  const preview=useCloudManager()?.data.preview;
+  const demo=!!preview||liveData?.responses===0;
+  const data=demo?demoSurvey:liveData;
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [version, setVersion] = useState(0);
   useEffect(()=>{const timer=setInterval(()=>{if(!document.hidden)setVersion(v=>v+1);},15000);return()=>clearInterval(timer);},[]);
   useEffect(() => {
+    if(preview)return;
     const controller = new AbortController();
     void fetch("/api/manager/survey-results", { cache: "no-store", signal: controller.signal }).then(async (response) => {
       const result = await response.json();
@@ -24,12 +31,12 @@ export default function ReportsPage() {
       return result as Results;
     }).then((result) => { if (!controller.signal.aborted) { setData(result); setError(""); } }).catch((reason) => { if (!controller.signal.aborted) setError(reason.message || "โหลดรายงานไม่ได้"); });
     return () => controller.abort();
-  }, [version]);
+  }, [version,preview]);
 
   function exportCsv() {
     if (!data) return;
     const rows: (string | number)[][] = [
-      ["อีเวนต์", data.eventName], ["ลงทะเบียน", data.registered], ["เช็กอิน", data.checkedIn], ["คำตอบทั้งหมด", data.responses],
+      ["ชนิดข้อมูล", demo ? "ข้อมูลจำลอง" : "ข้อมูลจริง"], ["อีเวนต์", data.eventName], ["ลงทะเบียน", data.registered], ["เช็กอิน", data.checkedIn], ["คำตอบทั้งหมด", data.responses],
       ["คำถาม", "ประเภท", "คำตอบ / ตัวเลือก", "จำนวนคำตอบ", "ร้อยละของผู้ตอบคำถามนี้"],
       ...data.questions.flatMap((question) => [
         ...Object.entries(question.choices).map(([label, count]) => [question.field.label, question.field.type, label, count, percentage(count, question.total)]),
@@ -55,6 +62,7 @@ export default function ReportsPage() {
     {error && <p role="alert" className={styles.error}>{error} · <Link href="/login">ไปหน้าเข้าสู่ระบบ</Link></p>}
     {!data && !error && <p role="status">กำลังโหลดรายงาน…</p>}
     {notice && <p role="status" className={styles.notice}>{notice}</p>}
+    {demo&&<DemoLabel/>}
     {data && <>
       <p className={styles.notice}>{data.eventName} · {data.responses} คำตอบที่บันทึกแล้ว</p>
       <div className={styles.metrics}>{[

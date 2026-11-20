@@ -94,8 +94,8 @@ function Duplicate({ result, attendee }: Props) {
   const ci = attendee.checkIn!;
   return (
     <>
-      <PageHeader eyebrow="ผลการสแกน / เช็กอินซ้ำ" title="เช็กอินล่วงหน้าแล้ว" />
-      <Hero tone="warn" icon={<WarnIcon size={28} />} title="ไม่เช็กอินซ้ำ" caption="ผู้เข้าร่วมคนนี้มีประวัติเข้างานแล้ว" />
+      <PageHeader eyebrow="ผลการสแกน / เช็กอินซ้ำ" title="ผู้เข้าร่วมเช็กอินแล้ว" />
+      <Hero tone="warn" icon={<WarnIcon size={28} />} title="สแกน QR ซ้ำ" caption="ผู้เข้าร่วมคนนี้มีประวัติเข้างานแล้ว ไม่บันทึกซ้ำ" />
       <Card title="ข้อมูลการเช็กอินเดิม">
         <AttendeeHeader attendee={attendee} event={result.event} />
         <div className={s.spacer8}>

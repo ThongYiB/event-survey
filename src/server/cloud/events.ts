@@ -8,23 +8,31 @@ import {cleanKiosk} from '@/lib/kiosk';
 
 export const activeEventCookie = "event-survey-active-event";
 
-export async function getCloudManagerData(client: SupabaseClient, profile: Profile, requested?: string): Promise<CloudManagerData> {
-  const { data, error } = await client.from("events").select("id,name,status,details,settings").eq("owner_id", profile.id).eq("suspended", false).order("created_at", { ascending: false });
-  if (error) throw new CloudError("โหลดอีเวนต์ไม่ได้ กรุณาตรวจโครงสร้างตารางใน Supabase", 503);
-  const events = (data || []).map((event) => ({ ...event, details: { ...defaultEventDetails, ...event.details, name: event.name }, settings: event.settings || {} })) as CloudManagerEvent[];
+export async function getCloudManagerData(client: SupabaseClient, profile: Profile, requested?: string,includeKiosk=true): Promise<CloudManagerData> {
   const selected = requested ?? (await cookies()).get(activeEventCookie)?.value;
-  const event = events.find((event) => event.id === selected) ?? events[0] ?? null;
+  let currentQuery=client.from('events').select(includeKiosk?'id,name,status,details,settings':'id,name,status,details,form:settings->form,survey:settings->survey').eq('owner_id',profile.id).eq('suspended',false);
+  currentQuery=selected?currentQuery.eq('id',selected):currentQuery.order('created_at',{ascending:false}).limit(1);
+  const [listing,current]=await Promise.all([
+    client.from('events').select('id,name,status,venue:details->>venue,startDate:details->>startDate,endDate:details->>endDate,startTime:details->>startTime,endTime:details->>endTime').eq('owner_id',profile.id).eq('suspended',false).order('created_at',{ascending:false}),
+    currentQuery.maybeSingle(),
+  ]);
+  const {data,error}=listing;
+  if (error) throw new CloudError("โหลดอีเวนต์ไม่ได้ กรุณาตรวจโครงสร้างตารางใน Supabase", 503);
+  const events = (data || []).map(row=>({id:row.id,name:row.name,status:row.status,details:{...defaultEventDetails,name:row.name,venue:row.venue||'',startDate:row.startDate||'',endDate:row.endDate||'',startTime:row.startTime||'',endTime:row.endTime||''},settings:{}})) as CloudManagerEvent[];
+  if(current.error)throw new CloudError('โหลดรายละเอียดอีเวนต์ไม่ได้',503);
+  // An expired selection falls back to the newest owned event without trusting the cookie.
+  if(!current.data&&events.length&&selected)return getCloudManagerData(client,profile,events[0].id,includeKiosk);
+  const raw=current.data as unknown as {id:string;name:string;status:CloudManagerEvent['status'];details:Record<string,string>;settings?:Record<string,unknown>;form?:unknown;survey?:unknown}|null;
+  const event:CloudManagerEvent|null=raw?{id:raw.id,name:raw.name,status:raw.status,details:{...defaultEventDetails,...raw.details,name:raw.name},settings:includeKiosk?(raw.settings||{}):{...(raw.form?{form:raw.form}:{}),...(raw.survey?{survey:raw.survey}:{})}}:null;
   const team: CloudManagerData["team"] = [];
   if (event) {
-    const { data: members, error: memberError } = await client.from("event_members").select("user_id,permissions").eq("event_id", event.id);
+    const { data: members, error: memberError } = await client.from("event_members").select("user_id,permissions,profiles(id,name,email)").eq("event_id", event.id);
     if (memberError) throw new CloudError("โหลดทีมงานไม่ได้", 503);
     if (members?.length) {
-      const { data: staff, error: staffError } = await client.from("profiles").select("id,name,email").in("id", members.map((member) => member.user_id));
-      if (staffError) throw new CloudError("โหลดบัญชีทีมงานไม่ได้", 503);
-      for (const member of members) { const person = staff?.find((person) => person.id === member.user_id); if (person) team.push({ name: person.name, email: person.email, access: member.permissions }); }
+      for (const member of members) { const related=member.profiles as unknown as {name:string;email:string}|{name:string;email:string}[]|null;const person=Array.isArray(related)?related[0]:related;if(person)team.push({name:person.name,email:person.email,access:member.permissions}); }
     }
   }
-  return { profile: { id: profile.id, name: profile.name }, events, event, team };
+  return { mediaLoaded:includeKiosk,profile: { id: profile.id, name: profile.name }, events, event, team };
 }
 
 export function validateEventSetting(key: unknown, value: unknown) {

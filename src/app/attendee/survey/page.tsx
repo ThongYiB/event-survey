@@ -6,6 +6,8 @@ import { usePublicEvent } from "@/components/public/use-public-event";
 import { surveyOptions } from "@/lib/public-event";
 import { ClosedEvent, PublicLoadState } from "../event-state";
 import styles from "../feedback.module.css";
+import {PublicDemo} from '@/components/cloud/public-demo';
+import {supabaseEnabled} from '@/lib/supabase/config';
 
 
 
@@ -19,6 +21,7 @@ function SurveyPage() {
   const [updated, setUpdated] = useState(false);
   const [saving, setSaving] = useState(false);
   const requestKey = useRef("");
+  if(supabaseEnabled()&&!eventId)return <PublicDemo mode="survey"/>;
   if (!configuration) return <PublicLoadState error={loadError} retry={refresh} />;
   if (!configuration.surveyOpen) return <ClosedEvent kind="survey" details={configuration.details} />;
 

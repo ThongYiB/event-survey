@@ -1,0 +1,1 @@
+export function DemoLabel(){return <small style={{display:'inline-block',justifySelf:'start',fontSize:12,fontWeight:500,color:'#657980',background:'#edf3f4',padding:'3px 8px',borderRadius:6}} role="note">ข้อมูลจำลอง</small>;}

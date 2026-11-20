@@ -4,8 +4,8 @@ import { CloudError, cloudErrorResponse, requireCloudProfile } from "@/server/cl
 import { activeEventCookie, getCloudManagerData, validateEventSetting } from "@/server/cloud/events";
 import { isSameOrigin } from "@/server/manager-session";
 
-export async function GET() {
-  try { const { client, profile } = await requireCloudProfile(["event_manager"]); return Response.json(await getCloudManagerData(client, profile), { headers: { "Cache-Control": "no-store" } }); }
+export async function GET(request:NextRequest) {
+  try { const { client, profile } = await requireCloudProfile(["event_manager"]); return Response.json(await getCloudManagerData(client, profile,undefined,request.nextUrl.searchParams.get('media')==='1'), { headers: { "Cache-Control": "no-store" } }); }
   catch (error) { return cloudErrorResponse(error); }
 }
 
@@ -32,7 +32,7 @@ export async function PUT(request: NextRequest) {
     let body; try { body = JSON.parse(text); } catch { throw new CloudError("ข้อมูลไม่ถูกต้อง"); }
     const value = validateEventSetting(body.key, body.value);
     const selected = request.cookies.get(activeEventCookie)?.value;
-    const state = await getCloudManagerData(client, profile, selected);
+    const state = await getCloudManagerData(client, profile, selected,body.key==='kiosk');
     if (!state.event || (selected && state.event.id !== selected)) throw new CloudError("ไม่พบอีเวนต์ที่เลือก หรืออีเวนต์ถูกระงับแล้ว", 404);
     if (body.key === "team") {
       const { error } = await client.rpc("replace_event_team", { p_event: state.event.id, p_members: value });
@@ -45,6 +45,6 @@ export async function PUT(request: NextRequest) {
       const { data, error } = await client.rpc("save_event_setting", { p_event: state.event.id, p_key: body.key, p_value: value });
       if (error || !data) throw new CloudError("บันทึกการตั้งค่าไม่สำเร็จ กรุณาตรวจสิทธิ์และลองอีกครั้ง", 503);
     }
-    return Response.json(await getCloudManagerData(client, profile, state.event.id), { headers: { "Cache-Control": "no-store" } });
+    return Response.json(await getCloudManagerData(client, profile, state.event.id,body.media===true), { headers: { "Cache-Control": "no-store" } });
   } catch (error) { return cloudErrorResponse(error); }
 }

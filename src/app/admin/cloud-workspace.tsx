@@ -4,6 +4,8 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import styles from "./admin.module.css";
+import {DemoLabel} from '@/components/cloud/demo-label';
+import {demoEvent} from '@/lib/demo-data';
 
 type Account = { id: string; name: string; email: string; role: string; suspended: boolean; must_change_password: boolean };
 type Data = { accounts: Account[]; events: { id: string; name: string; owner_id: string; suspended: boolean }[]; audit: { id: number; action: string; target: string; created_at: string }[] };
@@ -88,6 +90,8 @@ export function CloudAdminWorkspace({ children }: { children: ReactNode }) {
       {section === "events" && <><h1>กำกับดูแลงาน</h1><section className={styles.panel}><div className={styles.scroll}><table><thead><tr><th>อีเวนต์</th><th>Event Manager</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody>{data?.events.map((event) => <tr key={event.id}><td>{event.name}</td><td>{data.accounts.find((account) => account.id === event.owner_id)?.name || "บัญชีที่ปิดใช้งาน"}</td><td>{event.suspended ? "ระงับ" : "เปิดใช้งาน"}</td><td><button disabled={busy} onClick={() => mutate("PATCH", { id: event.id, action: "toggle_event" })}>{event.suspended ? "เปิดใช้งาน" : "ระงับอีเวนต์"}</button></td></tr>)}</tbody></table>{data && !data.events.length && <p>ยังไม่มีอีเวนต์</p>}</div></section></>}
       {section === "audit" && <><h1>Audit Log</h1><section className={styles.panel}><p>ประวัติล่าสุด 200 รายการ</p><div className={styles.scroll}><table><thead><tr><th>เวลา</th><th>การดำเนินการ</th><th>รายการ</th></tr></thead><tbody>{data?.audit.map((entry) => <tr key={entry.id}><td>{new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeStyle: "medium", timeZone: "Asia/Bangkok" }).format(new Date(entry.created_at))}</td><td>{entry.action}</td><td>{entry.target}</td></tr>)}</tbody></table>{data && !data.audit.length && <p>ยังไม่มีการเปลี่ยนแปลง</p>}</div></section></>}
       {section === "security" && <><h1>ความปลอดภัย</h1><section className={styles.panel}><h2>บัญชีผู้ดูแลระบบ</h2><p>{data?.accounts.filter((account) => account.role === "system_admin" && !account.suspended).length ?? "…"} บัญชี · ป้องกันการระงับและลบบัญชีผู้ดูแล</p><h2>รอเปลี่ยนรหัสผ่านครั้งแรก</h2><p>{data?.accounts.filter((account) => account.must_change_password && !account.suspended).length ?? "…"} บัญชี</p></section></>}
+      {data&&section==='events'&&!data.events.length&&<section className={styles.panel}><DemoLabel/><h2>ตัวอย่างรายการอีเวนต์</h2><p>{demoEvent.name} · Event Manager ตัวอย่าง · เปิดใช้งาน</p></section>}
+      {data&&section==='audit'&&!data.audit.length&&<section className={styles.panel}><DemoLabel/><h2>ตัวอย่างประวัติ</h2><p>สร้างบัญชี Event Manager · manager@example.test</p><p>สร้างอีเวนต์ · {demoEvent.name}</p></section>}
     </div></main>
   </div>;
 }

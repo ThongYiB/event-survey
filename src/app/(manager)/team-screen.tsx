@@ -5,6 +5,8 @@ import { ScreenHeading } from "./shell";
 import { useSaveSetting, useSaved } from "./store";
 import styles from "./manager.module.css";
 import {StaffInvite} from '@/components/cloud/staff-invite';
+import {demoTeam} from '@/lib/demo-data';
+import {DemoLabel} from '@/components/cloud/demo-label';
 
 const permissions = ["ค้นหาผู้ลงทะเบียน", "เช็กอิน", "ลงทะเบียน Walk-in","แสดง QR แบบสอบถาม"];
 
@@ -17,7 +19,9 @@ const initialTeam: Staff[] = [
 
 export function TeamManagement() {
   const saveSetting = useSaveSetting();
-  const team = useSaved("team", initialTeam);
+  const savedTeam = useSaved("team", initialTeam);
+  const demo=!savedTeam.length;
+  const team=demo?demoTeam:savedTeam;
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<Staff | "new" | null>(null);
   const [feedback, setFeedback] = useState<{ text: string; error?: boolean }>();
@@ -42,7 +46,7 @@ export function TeamManagement() {
       return;
     }
     const staff = { name, email, access: form.getAll("access").map(String) };
-    save(editing === "new" ? [...team, staff] : team.map((item) => item.email === email ? staff : item), "บันทึกทีมงานแล้ว");
+    save(editing === "new" ? [...savedTeam, staff] : savedTeam.map((item) => item.email === email ? staff : item), "บันทึกทีมงานแล้ว");
     setQuery("");
   }
 
@@ -69,6 +73,7 @@ export function TeamManagement() {
       </form>}
       <section className={styles.panel}>
         <h2>รายชื่อทีมงาน</h2>
+        {demo&&<DemoLabel/>}
         <label>ค้นหาทีมงาน<input type="search" placeholder="ชื่อหรืออีเมล Staff" value={query} onChange={(e) => setQuery(e.target.value)} /></label>
         <div className={styles.scroll}>
           <table>
@@ -79,8 +84,8 @@ export function TeamManagement() {
                 <td>{staff.access.join(" · ") || "ยังไม่ได้กำหนด"}</td>
                 <td>{staff.access.length ? "มอบหมายแล้ว" : "ยังไม่มอบหมาย"}</td>
                 <td><div className={styles.item}>
-                  <button className={styles.secondary} onClick={() => { setEditing(staff); setFeedback(undefined); }}>{staff.access.length ? "แก้ไข" : "มอบหมาย"}</button>
-                  {!!staff.access.length && <button className={styles.secondary} onClick={() => {
+                  <button disabled={demo} className={styles.secondary} onClick={() => { setEditing(staff); setFeedback(undefined); }}>{staff.access.length ? "แก้ไข" : "มอบหมาย"}</button>
+                  {!!staff.access.length && <button disabled={demo} className={styles.secondary} onClick={() => {
                     if (window.confirm(`ถอนสิทธิ์ของ ${staff.name} ในงานนี้หรือไม่?`)) save(team.map((item) => item.email === staff.email ? { ...item, access: [] } : item), "ถอนสิทธิ์แล้ว");
                   }}>ถอนสิทธิ์</button>}
                 </div></td>

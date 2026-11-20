@@ -10,11 +10,17 @@ if(!process.argv.includes('--cleanup')){
  const f=JSON.parse(await readFile(file,'utf8')),base=process.env.REGISTRATION_TEST_URL||'http://127.0.0.1:3000',manager=new Map(),staff=new Map();
  async function call(path,method='GET',body,jar=new Map()){const r=await fetch(base+path,{method,headers:{Cookie:[...jar].map(([k,v])=>`${k}=${v}`).join('; '),...(method!=='GET'?{Origin:base,'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{}),redirect:'manual'});for(const c of r.headers.getSetCookie()){const pair=c.split(';')[0],i=pair.indexOf('=');jar.set(pair.slice(0,i),pair.slice(i+1));}return{status:r.status,body:await r.json()};}
  assert.equal((await call('/api/auth/sign-in','POST',{email:f.email,password:f.password},manager)).status,200);
- const u={email:`qa-join-${randomUUID()}@example.test`,password:randomBytes(32).toString('hex')};const created=await admin.auth.admin.createUser({email:u.email,password:u.password,email_confirm:true,user_metadata:{name:'ทีมงานสมัครทดสอบ'}});if(created.error)throw created.error;f.extraStaff={...u,id:created.data.user.id};await writeFile(file,JSON.stringify(f));
- assert.equal((await call('/api/auth/sign-in','POST',u,staff)).status,200);
+ const u={email:`qa-join-${randomUUID()}@example.test`,password:randomBytes(32).toString('hex')};
  const invite=await call('/api/manager/staff-invite','POST',{},manager);assert.equal(invite.status,200);let path=invite.body.path;let query=new URL(path,base).searchParams;
  assert.equal((await call(`/api/public/staff-signup?${query}`)).status,200);
  const join={event:f.eventId,invite:query.get('invite'),action:'join'};
+ const signup=await call('/api/public/staff-signup','POST',{...join,action:'signup',name:'ทีมงานสมัครทดสอบ',...u},staff);
+ assert.equal(signup.status,201);assert.equal(signup.body.next,'/staff');
+ const {data:createdProfile,error:createdError}=await admin.from('profiles').select('id,role').eq('email',u.email).single();if(createdError)throw createdError;assert.equal(createdProfile.role,'staff');f.extraStaff={...u,id:createdProfile.id};await writeFile(file,JSON.stringify(f));
+ assert.equal((await call('/api/staff/session','GET',undefined,staff)).status,409,'New signup has a live session but no event privileges yet');
+ assert.equal((await call('/api/auth/sign-in','POST',u,staff)).status,200,'Staff can sign in immediately without confirming email');
+ assert.equal((await call('/api/public/staff-signup','POST',{...join,action:'signup',name:'Duplicate',email:f.email,password:'DoNotReplaceAccount123'},staff)).status,400);
+ assert.equal((await call('/api/auth/sign-in','POST',{email:f.email,password:f.password},manager)).status,200,'Signup must never change an existing Manager password');
  assert.equal((await call('/api/public/staff-signup','POST',join)).status,401);
  assert.equal((await call('/api/public/staff-signup','POST',join,staff)).status,200);
  assert.equal((await call('/api/staff/session','GET',undefined,staff)).status,409);
